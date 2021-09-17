@@ -12,8 +12,8 @@ Ray::~Ray()
 }
 
 Point radiance(Ray ray) {
-	Sphere sphere = Sphere(Point({ 255,255,300 }), 200);
-	vector<Sphere> spheres = { sphere, Sphere(Point({0,255,300}),100) };
+	Sphere sphere = Sphere(Point({ 255,255,1000 }), 150);
+	vector<Sphere> spheres = { sphere, Sphere(Point({0,255,300}),100),Sphere(Point({5000+450,255,0}),5000),Sphere(Point({-5000 + 50,255,0}),5000), Sphere(Point({255,-5000+50,0}),5000), Sphere(Point({255,5000+450,0}),5000) };
 
 	
 	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, spheres);
@@ -21,7 +21,7 @@ Point radiance(Ray ray) {
 		return Point({ 255,0,0 });
 	}
 	else {
-		Point lightPosition = Point({ 255,-1000,255 });
+		Point lightPosition = Point({ 255,255,255 });
 
 		Vector x = (Vector)ray.origin + get<0>(intersect) * ray.direction;
 		Direction directionToLight = Direction(((Vector)lightPosition-x).normalize().values);
@@ -38,7 +38,7 @@ Point toneMap(Vector v) {
 	vector<float> values;
 	for (auto val : v.values)
 	{
-		values.push_back(val*255);
+		values.push_back((val/max)*255);
 	}
 	return Point(values);
 }
