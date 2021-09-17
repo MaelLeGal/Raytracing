@@ -27,6 +27,16 @@ float Vector::sqr_norm() {
 }
 
 Vector Vector::normalize() {
+
+	float divider = this->norm();
+	vector<float> values;
+	for (auto val : this->values)
+	{
+		values.push_back(val / divider);
+	}
+
+	return Vector(values);
+
 	/*float max = *max_element(this->values.begin(), this->values.end());
 	float min = *max_element(this->values.begin(), this->values.end());
 	fabs(max) > fabs(min) ? max = max : max = min;
@@ -44,7 +54,6 @@ Vector Vector::normalize() {
 		}
 	}
 	return Vector(values);*/
-	return Vector();
 }
 
 float Vector::dot(Vector vec) {
@@ -123,6 +132,17 @@ Vector Vector::operator*(float scale) {
 
 	for (int i = 0; i < thisSize; i++) {
 		values.push_back(this->values[i] * scale);
+	}
+
+	return Vector(values);
+}
+
+Vector operator*(float scale, Vector vec) {
+	vector<float> values;
+	float vecSize = vec.values.size();
+
+	for (int i = 0; i < vecSize; i++) {
+		values.push_back(vec.values[i] * scale);
 	}
 
 	return Vector(values);

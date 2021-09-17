@@ -26,4 +26,6 @@ public:
 	Vector operator*(float scale);
 	Vector operator/(float divider);
 };
+
+Vector operator*(float scale, Vector vec);
 #endif // !VECTOR_H

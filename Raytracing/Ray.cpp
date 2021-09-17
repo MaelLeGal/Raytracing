@@ -16,15 +16,31 @@ Point radiance(Ray ray) {
 	vector<Sphere> spheres = { sphere, Sphere(Point({0,255,300}),100) };
 
 	
-	float intersect = rayIntersectSpheres(ray, spheres);
-	if (intersect == -1){
+	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, spheres);
+	if (get<0>(intersect) == -1){
 		return Point({ 255,0,0 });
 	}
 	else {
-		return Point({ intersect,intersect,intersect });
-	}
+		Point lightPosition = Point({ 255,-1000,255 });
 
-	
+		Vector x = (Vector)ray.origin + get<0>(intersect) * ray.direction;
+		Direction directionToLight = Direction(((Vector)lightPosition-x).normalize().values);
+		Direction normal = Direction(((Vector)get<1>(intersect).center - x).normalize().values);
+		float lightCoef = abs(normal.dot(directionToLight)); //Add absolute value
+		//Point enlightedPixel = toneMap(Vector({ lightCoef ,lightCoef ,lightCoef }));
+		return Point({ 255 * lightCoef,255 * lightCoef,255 * lightCoef });
+		//return enlightedPixel;
+	}
+}
+
+Point toneMap(Vector v) {
+	int max = *max_element(v.values.begin(), v.values.end());
+	vector<float> values;
+	for (auto val : v.values)
+	{
+		values.push_back(val*255);
+	}
+	return Point(values);
 }
 
 
@@ -36,23 +52,14 @@ float rayIntersectSphere(Ray ray, Sphere sphere) {
 	float b = -2 * ray.direction.dot(oc);
 	float c = oc.dot(oc) - r2;
 
-	//cout << "a : " << a << endl; //1
-	//cout << "b : " << b << endl; //-20
-	//cout << "c : " << c << endl; //99
-
 	float delta = (b * b) - (4 * a * c);
 	float t0 = -1;
 	float t1 = -1;
 
-
-	//cout << delta << endl;
 	if (delta >= 0) {
 		t0 = ((-b - sqrt(delta)) / (2 * a));
 		t1 = ((-b + sqrt(delta)) / (2 * a));
 	}
-
-	//cout << t0 << endl;
-	//cout << t1 << endl;
 
 	if (t0 >= 0) return t0;
 	if (t1 >= 0) return t1;
@@ -61,17 +68,19 @@ float rayIntersectSphere(Ray ray, Sphere sphere) {
 
 }
 
-float rayIntersectSpheres(Ray ray, vector<Sphere> spheres) {
-	vector<float> intersections;
+tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres) {
+	vector<tuple<float, Sphere>> intersections;
 	for (auto sphere : spheres) {
-		intersections.push_back(rayIntersectSphere(ray,sphere));
+		intersections.push_back(make_tuple(rayIntersectSphere(ray,sphere),sphere));
 	}
 
-	intersections.erase(remove(intersections.begin(), intersections.end(), -1), intersections.end());
+	intersections.erase(remove_if(intersections.begin(), intersections.end(), [](const tuple<float,Sphere>& x) -> bool {return get<0>(x) == -1;}), intersections.end());
 
-	if (intersections.empty()) return -1;
+	if (intersections.empty()) return make_tuple(-1,Sphere());
 
-	float intersection = *min_element(intersections.begin(), intersections.end());
+	//int max = *max_element(intersections.begin(), intersections.end());
+	//float intersection = (*min_element(intersections.begin(), intersections.end()) / max) * 255;
+	tuple<float, Sphere> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Sphere>& x, const tuple<float, Sphere>& y) { return get<0>(x) < get<0>(y);});
 
 	return intersection;
 
@@ -82,12 +91,6 @@ int main() {
 
 	vector<int> dimensions = { 500,500 };
 	vector<vector<vector<int>>> pixels(dimensions[0], vector<vector<int>>(dimensions[1]));
-	
-
-
-	cout << pixels.size() << endl;
-	cout << pixels[0].size() << endl;
-	cout << pixels[0][0].size() << endl;
 
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {
@@ -100,14 +103,6 @@ int main() {
 			//pixels[i][j].push_back(pixel);
 		}
 	}
-
-	//Ray ray = Ray(Point({ 0,0,0 }), Direction({ 1,0,0 }));
-	
-
-	//float res = rayIntersect(ray, sphere);
-	//cout << res << endl;
-
-	cout << pixels[0][0].size() << endl;
 
 	const char* filename = "first_image.ppm";
 

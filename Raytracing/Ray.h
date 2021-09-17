@@ -9,6 +9,7 @@
 #include "Vector.h";
 #include "CreationImagePPM.h";
 #include "Sphere.h"
+#include <tuple>
 
 
 class Ray
@@ -27,5 +28,7 @@ Point radiance(Ray ray);
 
 float rayIntersectSphere(Ray ray, Sphere sphere);
 
-float rayIntersectSpheres(Ray ray, vector<Sphere> spheres);
+tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres);
+
+Point toneMap(Vector v);
 
