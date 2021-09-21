@@ -12,17 +12,12 @@ Ray::~Ray()
 }
 
 Point radiance(Ray ray) {
-	//Sphere sphere = Sphere(Point({ 250,250,1000 }), 150, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse));
-	vector<Sphere> spheres = {																		// Need to be a parameter of radiance
-		Sphere(Point({5000+500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
-		Sphere(Point({-5000,250,0}),5000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
-		Sphere(Point({250,-5000,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
-		Sphere(Point({250,5000+500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
-		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
-
-		Sphere(Point({150,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)),
-		Sphere(Point({350,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse))
-	}; 
+	Sphere sphere = Sphere(Point({ 255,255,1000 }), 150, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse));
+	vector<Sphere> spheres = { sphere, Sphere(Point({0,255,300}),100, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)),								// Need to be a parameter of radiance
+		Sphere(Point({5000+450,255,0}),5000, Material(Vector({1,0,0}), MaterialBehaviour::Diffuse)), //Right
+		Sphere(Point({-5000 + 50,255,0}),5000, Material(Vector({0,0,1}), MaterialBehaviour::Diffuse)), //Left
+		Sphere(Point({255,-5000+50,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
+		Sphere(Point({255,5000+450,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)) }; //Bottom
 
 	
 	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, spheres);
@@ -30,40 +25,33 @@ Point radiance(Ray ray) {
 		return Point({ 255,255,255 });
 	}
 	else {
-		Point lightPosition = Point({ 250,250,250 });
-		Vector lightEmission = Vector({50000,0,50000}); //Color and intensity of the lamp
+		Point lightPosition = Point({ 255,255,255 });
 
 		Vector x = (Vector)ray.origin + get<0>(intersect) * ray.direction;
-		Direction directionToLight = Direction(((Vector)lightPosition-x).values);
-		Direction normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
-		float lighDistance2 = directionToLight.dot(directionToLight);
-		float lightCoef = normal.dot(directionToLight.normalize()/lighDistance2); //Attenuation of the light by the distance to it.
-		//Point enlightedPixel = toneMap(Vector({ lightCoef ,lightCoef ,lightCoef })); 
-
+		Direction directionToLight = Direction(((Vector)lightPosition-x).normalize().values);
+		Direction normal = Direction(((Vector)get<1>(intersect).center - x).normalize().values);
+		float lightCoef = abs(normal.dot(directionToLight));
+		//Point enlightedPixel = toneMap(Vector({ lightCoef ,lightCoef ,lightCoef }));
+		//cout << "Access to albedo" << endl;
+		//cout << "Size : " << get<1>(intersect).material.material.values.size() << endl;*/
 		float red = get<1>(intersect).material.material.values[0];
+		//cout << "Red : " << red << endl;
 		float green = get<1>(intersect).material.material.values[1];
+		//cout << "Green : " << green << endl;
 		float blue = get<1>(intersect).material.material.values[2];
+		//cout << "Blue : " << blue << endl;
 
-		//lightCoef = lightCoef / lighDistance2; 
-
-		return toneMap(Vector({lightEmission.values[0] * lightCoef * red ,
-			lightEmission.values[1] * lightCoef * green,
-			lightEmission.values[2] * lightCoef * blue }));
+		return Point({ 255 * lightCoef * red ,255 * lightCoef * green, 255 * lightCoef * blue });
 		//return enlightedPixel;
 	}
 }
 
 Point toneMap(Vector v) {
-	int min = *min_element(v.values.begin(), v.values.end());
+	int max = *max_element(v.values.begin(), v.values.end());
 	vector<float> values;
 	for (auto val : v.values)
 	{
-		float value = floor(pow(val, 1.0 / 2.2) * 255);
-		value = value > 255 ? 255 : value;
-		value = value < 0 ? 0 : value;
-		//cout<< val << " <--Value/Normalized value --> " << value << endl;
-		//values.push_back((pow(value,1.0/2.2)/max)*255); //val**1/2.2 == Correction Gamma
-		values.push_back(value);
+		values.push_back((val/max)*255);
 	}
 	return Point(values);
 }
@@ -117,24 +105,10 @@ int main() {
 	vector<int> dimensions = { 500,500 };
 	vector<vector<vector<int>>> pixels(dimensions[0], vector<vector<int>>(dimensions[1]));
 
-	Vector pointNearPlane;
-	Vector pointNearPlaneMoved;
-	Vector pointFarPlane;
-
-	Direction cameraDirection;
-
-	float fov = 1.001;
-
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {
-			
-			pointNearPlane = Vector({ (float)j,(float)i,0 });
-			pointNearPlaneMoved = pointNearPlane - Vector({ 250,250,0 }); //Move the point on the plane -250:250
-			pointFarPlane = Vector({ pointNearPlaneMoved.values[0] * fov,pointNearPlaneMoved.values[1] * fov,1 }); //Apply the fov
 
-			cameraDirection = Direction((pointFarPlane - pointNearPlaneMoved).normalize().values);
-
-			Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
+			Ray ray = Ray(Point({ (float)j,(float)i,0 }), Direction({ 0,0,1 }));
 
 			vector<float> pixel = radiance(ray).values; // Probleme int to float;
 			//vector<int> pixel = { i%255,j%255,0 };
