@@ -4,10 +4,10 @@
 //#include "Vector.h";
 //#include "Sphere.h";
 
-#include "Direction.h";
-#include "Point.h";
-#include "Vector.h";
-#include "CreationImagePPM.h";
+#include "Direction.h"
+#include "Point.h"
+#include "Vector.h"
+#include "CreationImagePPM.h"
 #include "Sphere.h"
 #include "Material.h"
 #include <tuple>

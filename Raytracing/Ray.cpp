@@ -1,5 +1,7 @@
 #include "Ray.h"
 
+using namespace std;
+
 Ray::Ray(Point origin, Direction direction)
 {
 	this->origin = origin;
@@ -21,8 +23,19 @@ Point radiance(Ray ray) {
 		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
 
 		Sphere(Point({150,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)),
+		
 		Sphere(Point({350,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse))
 	}; 
+
+	vector<Sphere> scene = {
+		Sphere(Point({5000 + 500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
+		Sphere(Point({-5000,250,0}),5000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
+		Sphere(Point({250,-5000,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
+		Sphere(Point({250,5000 + 500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
+		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
+	};
+
+	
 
 	
 	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, spheres);
@@ -31,25 +44,34 @@ Point radiance(Ray ray) {
 	}
 	else {
 		Point lightPosition = Point({ 250,250,250 });
-		Vector lightEmission = Vector({50000,0,50000}); //Color and intensity of the lamp
+		Vector lightEmission = Vector({50000,50000,50000}); //Color and intensity of the lamp
 
-		Vector x = (Vector)ray.origin + get<0>(intersect) * ray.direction;
+		Vector x = (Vector)ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
 		Direction directionToLight = Direction(((Vector)lightPosition-x).values);
-		Direction normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
-		float lighDistance2 = directionToLight.dot(directionToLight);
-		float lightCoef = normal.dot(directionToLight.normalize()/lighDistance2); //Attenuation of the light by the distance to it.
-		//Point enlightedPixel = toneMap(Vector({ lightCoef ,lightCoef ,lightCoef })); 
+		
+		x = x + directionToLight * 0.01; // Added an Epsilon for our object not to cast shadow on themselves
 
+		//Light
+		Direction normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
+		Direction directionToLightNormalized = Direction(directionToLight.normalize().values);
+		float lightDistance2 = directionToLight.dot(directionToLight);
+		float lightCoef = normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); //Attenuation of the light by the distance to it.
+		
+		// Shadow
+		tuple<float, Sphere> tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), spheres);
+		float intersectLight = get<0>(tupleIntersectSphere);
+		Sphere sphereIntersect = get<1>(tupleIntersectSphere);
+		bool canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
+		Vector visibility = canSeeLightSource ? Vector({1,1,1}) : Vector({ 0,0,0 });
+
+		//Sphere color
 		float red = get<1>(intersect).material.material.values[0];
 		float green = get<1>(intersect).material.material.values[1];
 		float blue = get<1>(intersect).material.material.values[2];
 
-		//lightCoef = lightCoef / lighDistance2; 
-
-		return toneMap(Vector({lightEmission.values[0] * lightCoef * red ,
-			lightEmission.values[1] * lightCoef * green,
-			lightEmission.values[2] * lightCoef * blue }));
-		//return enlightedPixel;
+		return toneMap(Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * red ,
+			visibility.values[1] * lightEmission.values[1] * lightCoef * green,
+			visibility.values[2] * lightEmission.values[2] * lightCoef * blue }));
 	}
 }
 
@@ -61,15 +83,13 @@ Point toneMap(Vector v) {
 		float value = floor(pow(val, 1.0 / 2.2) * 255);
 		value = value > 255 ? 255 : value;
 		value = value < 0 ? 0 : value;
-		//cout<< val << " <--Value/Normalized value --> " << value << endl;
-		//values.push_back((pow(value,1.0/2.2)/max)*255); //val**1/2.2 == Correction Gamma
 		values.push_back(value);
 	}
 	return Point(values);
 }
 
 
-float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++ optional
+float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++2017 optional
 
 	Direction oc = sphere.center - ray.origin;
 	float r2 = sphere.radius * sphere.radius;
@@ -103,8 +123,6 @@ tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres) {
 
 	if (intersections.empty()) return make_tuple(-1,Sphere());
 
-	//int max = *max_element(intersections.begin(), intersections.end());
-	//float intersection = (*min_element(intersections.begin(), intersections.end()) / max) * 255;
 	tuple<float, Sphere> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Sphere>& x, const tuple<float, Sphere>& y) { return get<0>(x) < get<0>(y);});
 
 	return intersection;
@@ -137,11 +155,9 @@ int main() {
 			Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
 
 			vector<float> pixel = radiance(ray).values; // Probleme int to float;
-			//vector<int> pixel = { i%255,j%255,0 };
-			//cout << "radiance Done" << endl;
+
 			pixels[i][j].insert(pixels[i][j].end(), pixel.begin(), pixel.end());
-			//pixels[i][j].push_back(pixel);
-			//cout << "Insertion Done" << endl;
+
 		}
 	}
 
