@@ -69,7 +69,7 @@ Point toneMap(Vector v) {
 }
 
 
-float rayIntersectSphere(Ray ray, Sphere sphere) {
+float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++ optional
 
 	Direction oc = sphere.center - ray.origin;
 	float r2 = sphere.radius * sphere.radius;
