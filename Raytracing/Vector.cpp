@@ -36,24 +36,6 @@ Vector Vector::normalize() {
 	}
 
 	return Vector(values);
-
-	/*float max = *max_element(this->values.begin(), this->values.end());
-	float min = *max_element(this->values.begin(), this->values.end());
-	fabs(max) > fabs(min) ? max = max : max = min;
-	
-	vector<float> values;
-	if (max != 0) {
-		
-		for (auto value : this->values) {
-			values.push_back(value / max);
-		}
-	}
-	else {
-		for (int i = 0; i < this->values.size(); i++) {
-			values.push_back(0);
-		}
-	}
-	return Vector(values);*/
 }
 
 float Vector::dot(Vector vec) {
@@ -68,6 +50,18 @@ float Vector::dot(Vector vec) {
 		cout << "The two vectors don't have the same length" << endl;
 	}
 	return val;
+}
+
+string Vector::ToString() {
+	string line = "{";
+	for (float val : this->values)
+	{
+		line += std::to_string(val) + ", ";
+	}
+
+	line += "}";
+
+	return line;
 }
 
 Vector Vector::operator+(Vector vec2) {

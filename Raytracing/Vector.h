@@ -5,6 +5,7 @@
 #include <iostream>
 #include <algorithm>
 #include <cmath>
+#include <string>
 
 using namespace std;
 
@@ -20,6 +21,7 @@ public:
 	float sqr_norm();
 	Vector normalize();
 	float dot(Vector vec);
+	string ToString();
 
 	Vector operator+(Vector vec2);
 	Vector operator-(Vector vec2);
