@@ -6,6 +6,16 @@
 #include "../Raytracing/Point.cpp"
 #include "../Raytracing/Direction.h"
 #include "../Raytracing/Direction.cpp"
+#include "../Raytracing/Object.h"
+#include "../Raytracing/Object.cpp"
+#include "../Raytracing/Sphere.h"
+#include "../Raytracing/Sphere.cpp"
+#include "../Raytracing/Material.h"
+#include "../Raytracing/Material.cpp"
+#include "../Raytracing/CreationImagePPM.h"
+#include "../Raytracing/CreationImagePPM.cpp"
+#include "../Raytracing/Ray.h"
+#include "../Raytracing/Ray.cpp"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -14,7 +24,7 @@ namespace UnitTest
 	TEST_CLASS(VectorClass)
 	{
 	public:
-		
+
 		TEST_METHOD(Operator_plus_1)
 		{
 			Vector vec1 = Vector({ 1,1,1 });
@@ -207,7 +217,7 @@ namespace UnitTest
 			Vector vec = Vector({ (float)-1.5,(float)-2.4,(float)-3.3 });
 			Vector res = vec.normalize();
 
-			vector<float> expected = { (float)(-1.5/sqrt(18.9)),  (float)(-2.4 / sqrt(18.9)) , (float)(-3.3 / sqrt(18.9)) };
+			vector<float> expected = { (float)(-1.5 / sqrt(18.9)),  (float)(-2.4 / sqrt(18.9)) , (float)(-3.3 / sqrt(18.9)) };
 
 			Assert::AreEqual(expected[0], res.values[0]);
 			Assert::AreEqual(expected[1], res.values[1]);
@@ -458,7 +468,30 @@ namespace UnitTest
 
 		TEST_METHOD(Constructor_1)
 		{
+			Object obj = Object();
+			Assert::IsNotNull(&obj);
+		}
 
+		TEST_METHOD(Constructor_2)
+		{
+			Material mat = Material();
+			Object obj = Object(mat);
+			Assert::IsNotNull(&obj);
+			Assert::IsNotNull(&obj.material);
+		}
+
+		TEST_METHOD(Constructor_3)
+		{
+			Material mat = Material(Vector({ 1,1,0 }), MaterialBehaviour::Diffuse);
+			Object obj = Object(mat);
+
+			Assert::IsNotNull(&obj);
+			Assert::IsNotNull(&obj.material);
+			Assert::AreEqual((float)1, obj.material.material.values[0]);
+			Assert::AreEqual((float)1, obj.material.material.values[1]);
+			Assert::AreEqual((float)0, obj.material.material.values[2]);
+			Assert::IsNotNull(&obj.material.materialBehaviour);
+			//Assert::AreEqual(obj.material.materialBehaviour, MaterialBehaviour::Diffuse);
 		}
 	};
 
@@ -468,7 +501,38 @@ namespace UnitTest
 
 		TEST_METHOD(Constructor_1)
 		{
+			Sphere sph = Sphere();
+			Assert::IsNotNull(&sph);
+		}
 
+		TEST_METHOD(Constructor_2)
+		{
+			Point center = Point({ 0,0,0 });
+			float radius = 1;
+			Sphere sph = Sphere(center, radius);
+			Assert::IsNotNull(&sph);
+			Assert::AreEqual((float)1, sph.radius);
+			Assert::AreEqual((float)0, sph.center.values[0]);
+			Assert::AreEqual((float)0, sph.center.values[1]);
+			Assert::AreEqual((float)0, sph.center.values[2]);
+		}
+
+		TEST_METHOD(Constructor_3)
+		{
+			Point center = Point({ 0,0,0 });
+			float radius = 1;
+			Material mat = Material(Vector({ 1,1,0 }), MaterialBehaviour::Diffuse);
+			Sphere sph = Sphere(center, radius, mat);
+			Assert::IsNotNull(&sph);
+			Assert::AreEqual((float)1, sph.radius);
+			Assert::AreEqual((float)0, sph.center.values[0]);
+			Assert::AreEqual((float)0, sph.center.values[1]);
+			Assert::AreEqual((float)0, sph.center.values[2]);
+			Assert::IsNotNull(&sph.material);
+			Assert::AreEqual((float)1, sph.material.material.values[0]);
+			Assert::AreEqual((float)1, sph.material.material.values[1]);
+			Assert::AreEqual((float)0, sph.material.material.values[2]);
+			Assert::IsNotNull(&sph.material.materialBehaviour);
 		}
 	};
 
@@ -478,8 +542,126 @@ namespace UnitTest
 
 		TEST_METHOD(Constructor_1)
 		{
+			Ray ray = Ray();
+			Assert::IsNotNull(&ray);
+		}
+		TEST_METHOD(Constructor_2)
+		{
+			Point origin = Point({ 0,0,0 });
+			Direction direction = Direction({ 1,1,1 });
+			Ray ray = Ray(origin, direction);
+			Assert::IsNotNull(&ray);
+			Assert::IsNotNull(&ray.origin);
+			Assert::IsNotNull(&ray.direction);
+			Assert::AreEqual((float)0, ray.origin.values[0]);
+			Assert::AreEqual((float)0, ray.origin.values[1]);
+			Assert::AreEqual((float)0, ray.origin.values[2]);
+			Assert::AreEqual((float)1, ray.direction.values[0]);
+			Assert::AreEqual((float)1, ray.direction.values[1]);
+			Assert::AreEqual((float)1, ray.direction.values[2]);
+		}
+
+		TEST_METHOD(rayIntersectSphere_1)
+		{
+			Point origin = Point({ 250,250,0 });
+			Direction direction = Direction({ 0,0,1 });
+			Ray ray = Ray(origin, direction);
+
+			Point center = Point({ 250,250,300 });
+			float radius = 100;
+			Sphere sphere = Sphere(center, radius);
+			float t0 = rayIntersectSphere(ray, sphere);
+
+			Assert::AreEqual((float)200, t0);
+		}
+
+		TEST_METHOD(rayIntersectSphere_2)
+		{
+			Point origin = Point({ 250,250,0 });
+			Direction direction = Direction({ 0,0,1 });
+			Ray ray = Ray(origin, direction);
+
+			Point center = Point({ 500,500,300 });
+			float radius = 100;
+			Sphere sphere = Sphere(center, radius);
+			float t0 = rayIntersectSphere(ray, sphere);
+
+			Assert::AreEqual((float)-1, t0);
+		}
+
+		TEST_METHOD(rayIntersectSpheres_1)
+		{
+			Point origin = Point({ 250,250,0 });
+			Direction direction = Direction({ 0,0,1 });
+			Ray ray = Ray(origin, direction);
+
+			Point center1 = Point({ 250,250,300 });
+			float radius1 = 100;
+			Sphere sphere1 = Sphere(center1, radius1);
+
+			Point center2 = Point({ 150,250,200 });
+			float radius2 = 150;
+			Sphere sphere2 = Sphere(center2, radius2);
+
+			vector<Sphere> spheres;
+			spheres.push_back(sphere1);
+			spheres.push_back(sphere2);
+
+			tuple<float, Sphere> intersect = rayIntersectSpheres(ray, spheres);
+			Sphere intersectSphere = get<1>(intersect);
+			Assert::AreEqual((float)88.1966, get<0>(intersect));
+			Assert::AreEqual((float)150, intersectSphere.radius);
+			Assert::AreEqual((float)150, intersectSphere.center.values[0]);
+			Assert::AreEqual((float)250, intersectSphere.center.values[1]);
+			Assert::AreEqual((float)200, intersectSphere.center.values[2]);
+		}
+
+		TEST_METHOD(rayIntersectSpheres_2)
+		{
+			Point origin = Point({ 250,250,0 });
+			Direction direction = Direction({ 0,0,1 });
+			Ray ray = Ray(origin, direction);
+
+			Point center1 = Point({ 500,500,300 });
+			float radius1 = 100;
+			Sphere sphere1 = Sphere(center1, radius1);
+
+			Point center2 = Point({ 0,0,300 });
+			float radius2 = 150;
+			Sphere sphere2 = Sphere(center2, radius2);
+
+			vector<Sphere> spheres;
+			spheres.push_back(sphere1);
+			spheres.push_back(sphere2);
+
+			tuple<float, Sphere> intersect = rayIntersectSpheres(ray, spheres);
+			Sphere intersectSphere = get<1>(intersect);
+			Assert::AreEqual((float)-1, get<0>(intersect));
+		}
+
+		TEST_METHOD(Tonemap_1)
+		{
+			Vector vec = Vector({ 150,150,150 });
+			Point p = toneMap(vec);
+
+			Assert::AreEqual((float)255, p.values[0]);
+			Assert::AreEqual((float)255, p.values[1]);
+			Assert::AreEqual((float)255, p.values[2]);
 
 		}
+
+		TEST_METHOD(Radiance_1)
+		{
+			Point origin = Point({ 250,250,0 });
+			Direction direction = Direction({ 0,0,1 });
+			Ray ray = Ray(origin, direction);
+			Point pixel = radiance(ray);
+
+			Assert::AreEqual((float)230, pixel.values[0]);
+			Assert::AreEqual((float)230, pixel.values[1]);
+			Assert::AreEqual((float)230, pixel.values[2]);
+		}
+
 	};
 
 	TEST_CLASS(CreationImagePPMTests)
@@ -488,7 +670,11 @@ namespace UnitTest
 
 		TEST_METHOD(CreateImagePPM_1)
 		{
-
+			vector<int> dimensions = { 3,2 };
+			vector<vector<vector<int>>> pixels = { {{255,0,0},{0,255,0},{0,0,255}},
+										{{255,255,0},{255,255,255},{0,0,0}} };
+			const char* filename = "Unit_test_image.ppm";
+			createPPMImage(dimensions, pixels, filename);
 		}
 	};
 }

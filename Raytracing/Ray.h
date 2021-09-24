@@ -1,8 +1,5 @@
-//#include "CreationImagePPM.cpp";
-//#include "Direction.h";
-//#include "Point.h";
-//#include "Vector.h";
-//#include "Sphere.h";
+#ifndef RAY_H
+#define RAY_H
 
 #include "Direction.h"
 #include "Point.h"
@@ -20,6 +17,7 @@ public:
 	Point origin;
 	Direction direction;
 
+	Ray();
 	Ray(Point origin, Direction direction);
 	~Ray();
 
@@ -32,4 +30,4 @@ float rayIntersectSphere(Ray ray, Sphere sphere);
 tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres);
 
 Point toneMap(Vector v);
-
+#endif // !RAY_H
