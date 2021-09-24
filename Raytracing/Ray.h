@@ -23,11 +23,14 @@ public:
 
 };
 
-Point radiance(Ray ray);
+Vector radiance(Ray ray);
 
 float rayIntersectSphere(Ray ray, Sphere sphere);
 
 tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres);
 
 Point toneMap(Vector v);
+
+Point rayTrace(int x, int y);
+
 #endif // !RAY_H

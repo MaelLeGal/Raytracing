@@ -142,6 +142,19 @@ Vector operator*(float scale, Vector vec) {
 	return Vector(values);
 }
 
+float Vector::operator*(Vector vec) {
+
+	float value = 0;
+	float vecSize = vec.values.size();
+
+	for (int i = 0; i < vecSize; i++) {
+		value += this->values[i] * vec.values[i];
+	}
+
+	return value;
+
+}
+
 Vector Vector::operator/(float divider) {
 	vector<float> values;
 	float thisSize = this->values.size();

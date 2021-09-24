@@ -3,6 +3,7 @@
 
 #pragma once
 #include "Vector.h"
+#include "Direction.h"
 
 enum class MaterialBehaviour {Diffuse, Glass, Mirror};
 
@@ -14,8 +15,9 @@ public:
 
 	Material();
 	Material(Vector material, MaterialBehaviour materialBehaviour);
-
 };
+
+Direction reflect(Direction normal, Direction incomingRayDirection);
 
 #endif // MATERIAL_H
 

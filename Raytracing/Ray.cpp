@@ -2,6 +2,10 @@
 
 using namespace std;
 
+Ray::Ray() {
+
+}
+
 Ray::Ray(Point origin, Direction direction)
 {
 	this->origin = origin;
@@ -13,7 +17,7 @@ Ray::~Ray()
 {
 }
 
-Point radiance(Ray ray) {
+Vector radiance(Ray ray) {
 	//Sphere sphere = Sphere(Point({ 250,250,1000 }), 150, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse));
 	vector<Sphere> spheres = {																		// Need to be a parameter of radiance
 		Sphere(Point({5000+500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
@@ -22,9 +26,9 @@ Point radiance(Ray ray) {
 		Sphere(Point({250,5000+500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
 		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
 
-		Sphere(Point({150,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)),
+		Sphere(Point({150,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
 		
-		Sphere(Point({350,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse))
+		Sphere(Point({350,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror))
 	}; 
 
 	vector<Sphere> scene = {
@@ -43,35 +47,96 @@ Point radiance(Ray ray) {
 		return Point({ 255,255,255 });
 	}
 	else {
-		Point lightPosition = Point({ 250,250,250 });
-		Vector lightEmission = Vector({50000,50000,50000}); //Color and intensity of the lamp
+		
+		Vector x;
 
-		Vector x = (Vector)ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
-		Direction directionToLight = Direction(((Vector)lightPosition-x).values);
+		Point lightPosition;
+		Vector lightEmission;
+		Direction normal;
+		Direction directionToLight;
+		Direction directionToLightNormalized;
+		float lightDistance2;
+		float lightCoef;
+
+		tuple<float, Sphere> tupleIntersectSphere;
+		float intersectLight;
+		Sphere sphereIntersect;
+		bool canSeeLightSource;
+		Vector visibility;
+
+		float red;
+		float green;
+		float blue;
+		Vector albedo;
+		
+		Direction reflectedDirection;
+		Ray reflectedRay;
+		Vector radianceReflectedRayPixel;
+		Point reflectedPixel;
+		
+		lightPosition = Point({ 250,250,250 });
+		lightEmission = Vector({50000,50000,50000}); //Color and intensity of the lamp
+
+		x = (Vector)ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
+		directionToLight = Direction(((Vector)lightPosition-x).values);
 		
 		x = x + directionToLight * 0.01; // Added an Epsilon for our object not to cast shadow on themselves
 
 		//Light
-		Direction normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
-		Direction directionToLightNormalized = Direction(directionToLight.normalize().values);
-		float lightDistance2 = directionToLight.dot(directionToLight);
-		float lightCoef = normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); //Attenuation of the light by the distance to it.
+		normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
+		directionToLightNormalized = Direction(directionToLight.normalize().values);
+		lightDistance2 = directionToLight.dot(directionToLight);
+		lightCoef = normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); //Attenuation of the light by the distance to it.
 		
 		// Shadow
-		tuple<float, Sphere> tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), spheres);
-		float intersectLight = get<0>(tupleIntersectSphere);
-		Sphere sphereIntersect = get<1>(tupleIntersectSphere);
-		bool canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
-		Vector visibility = canSeeLightSource ? Vector({1,1,1}) : Vector({ 0,0,0 });
+		tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), spheres);
+		intersectLight = get<0>(tupleIntersectSphere);
+		sphereIntersect = get<1>(tupleIntersectSphere);
+		canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
+		visibility = canSeeLightSource ? Vector({1,1,1}) : Vector({ 0,0,0 });
 
 		//Sphere color
-		float red = get<1>(intersect).material.material.values[0];
-		float green = get<1>(intersect).material.material.values[1];
-		float blue = get<1>(intersect).material.material.values[2];
+		red = get<1>(intersect).material.material.values[0];
+		green = get<1>(intersect).material.material.values[1];
+		blue = get<1>(intersect).material.material.values[2];
+		albedo = get<1>(intersect).material.material;
 
-		return toneMap(Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * red ,
+		switch (get<1>(intersect).material.materialBehaviour) {
+		case MaterialBehaviour::Diffuse:
+			break; //optional
+		case MaterialBehaviour::Mirror:
+
+			reflectedDirection = reflect(normal, ray.direction);
+			reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
+			radianceReflectedRayPixel = (Vector)radiance(reflectedRay);
+			if (radianceReflectedRayPixel.values[0] == -1) {
+				albedo = Vector({ -1,-1,-1 });
+			}
+			else {
+				albedo = Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
+			}
+
+			break; //optional
+		case MaterialBehaviour::Glass:
+			cout << "Error not done yet" << endl; //TODO
+			break; //optional
+
+		 // you can have any number of case statements.
+		default: //Optional
+			cout << "Default for some reason" << endl;
+			return Vector({ -1,-1,-1 });
+		}
+
+
+
+		return Vector({ visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0] ,
+			visibility.values[1] * lightEmission.values[1] * lightCoef * albedo.values[1],
+			visibility.values[2] * lightEmission.values[2] * lightCoef * albedo.values[2] });//visibility * lightEmission * lightCoef * albedo;
+
+		/*return toneMap(Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * red ,
 			visibility.values[1] * lightEmission.values[1] * lightCoef * green,
 			visibility.values[2] * lightEmission.values[2] * lightCoef * blue }));
+		*/
 	}
 }
 
@@ -88,22 +153,22 @@ Point toneMap(Vector v) {
 	return Point(values);
 }
 
-
 float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++2017 optional
 
 	Direction oc = sphere.center - ray.origin;
 	float r2 = sphere.radius * sphere.radius;
-	float a = ray.direction.dot(ray.direction);
-	float b = -2 * ray.direction.dot(oc);
+	float a = 1; //ray.direction.dot(ray.direction); // a = 1 because ray.diraction.dot(ray.direction) = 1 when ray.direction is normalized
+	float b = -ray.direction.dot(oc);
 	float c = oc.dot(oc) - r2;
 
-	float delta = (b * b) - (4 * a * c);
+	float delta = (b * b) - c; //((2*b) * (2*b)) - (4 * a * c); //(b * b) - (4 * a * c);
+	float sqrt_delta = sqrt(delta);
 	float t0 = -1;
 	float t1 = -1;
 
 	if (delta >= 0) {
-		t0 = ((-b - sqrt(delta)) / (2 * a));
-		t1 = ((-b + sqrt(delta)) / (2 * a));
+		t0 = (-b - sqrt_delta); //((-b - sqrt_delta) / (2 * a));
+		t1 = (-b + sqrt_delta); //((-b + sqrt_delta) / (2 * a));
 	}
 
 	if (t0 >= 0) return t0;
@@ -130,11 +195,7 @@ tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres) {
 
 }
 
-int main() {
-
-	vector<int> dimensions = { 500,500 };
-	vector<vector<vector<int>>> pixels(dimensions[0], vector<vector<int>>(dimensions[1]));
-
+Point rayTrace(int x, int y) {
 	Vector pointNearPlane;
 	Vector pointNearPlaneMoved;
 	Vector pointFarPlane;
@@ -143,18 +204,33 @@ int main() {
 
 	float fov = 1.001;
 
+	pointNearPlane = Vector({ (float)y,(float)x,0 });
+	pointNearPlaneMoved = pointNearPlane - Vector({ 250,250,0 }); //Move the point on the plane -250:250
+	pointFarPlane = Vector({ pointNearPlaneMoved.values[0] * fov,pointNearPlaneMoved.values[1] * fov,1 }); //Apply the fov
+
+	cameraDirection = Direction((pointFarPlane - pointNearPlaneMoved).normalize().values);
+
+	Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
+
+	Vector color = radiance(ray);
+	if (color.values[0] == -1) {
+		return Point({ 255,255,255 });
+	}
+	else {
+		return toneMap(color);
+	}
+}
+
+int main() {
+
+	vector<int> dimensions = { 500,500 };
+	vector<vector<vector<int>>> pixels(dimensions[0], vector<vector<int>>(dimensions[1]));
+
+
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {
-			
-			pointNearPlane = Vector({ (float)j,(float)i,0 });
-			pointNearPlaneMoved = pointNearPlane - Vector({ 250,250,0 }); //Move the point on the plane -250:250
-			pointFarPlane = Vector({ pointNearPlaneMoved.values[0] * fov,pointNearPlaneMoved.values[1] * fov,1 }); //Apply the fov
 
-			cameraDirection = Direction((pointFarPlane - pointNearPlaneMoved).normalize().values);
-
-			Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
-
-			vector<float> pixel = radiance(ray).values; // Probleme int to float;
+			vector<float> pixel = rayTrace(i, j).values;
 
 			pixels[i][j].insert(pixels[i][j].end(), pixel.begin(), pixel.end());
 

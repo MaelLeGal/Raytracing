@@ -26,6 +26,7 @@ public:
 	Vector operator+(Vector vec2);
 	Vector operator-(Vector vec2);
 	Vector operator*(float scale);
+	float operator*(Vector vec);
 	Vector operator/(float divider);
 
 	//TODO operator between Direction and Point;
