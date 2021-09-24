@@ -641,12 +641,12 @@ namespace UnitTest
 
 		TEST_METHOD(Tonemap_1)
 		{
-			Vector vec = Vector({ 150,150,150 });
+			Vector vec = Vector({ 0.8,0.8,0.8 });
 			Point p = toneMap(vec);
 
-			Assert::AreEqual((float)255, p.values[0]);
-			Assert::AreEqual((float)255, p.values[1]);
-			Assert::AreEqual((float)255, p.values[2]);
+			Assert::AreEqual((float)230, p.values[0]);
+			Assert::AreEqual((float)230, p.values[1]);
+			Assert::AreEqual((float)230, p.values[2]);
 
 		}
 
@@ -655,16 +655,16 @@ namespace UnitTest
 			Point origin = Point({ 250,250,0 });
 			Direction direction = Direction({ 0,0,1 });
 			Ray ray = Ray(origin, direction);
-			Point pixel = radiance(ray);
+			Vector pixel = radiance(ray);
 
-			Assert::AreEqual((float)230, pixel.values[0]);
-			Assert::AreEqual((float)230, pixel.values[1]);
-			Assert::AreEqual((float)230, pixel.values[2]);
+			Assert::AreEqual((float)0.8, pixel.values[0]);
+			Assert::AreEqual((float)0.8, pixel.values[1]);
+			Assert::AreEqual((float)0.8, pixel.values[2]);
 		}
 
 	};
 
-	TEST_CLASS(CreationImagePPMTests)
+	TEST_CLASS(CreationImagePPMTest)
 	{
 	public:
 
@@ -675,6 +675,20 @@ namespace UnitTest
 										{{255,255,0},{255,255,255},{0,0,0}} };
 			const char* filename = "Unit_test_image.ppm";
 			createPPMImage(dimensions, pixels, filename);
+		}
+	};
+
+	TEST_CLASS(MaterialTest)
+	{
+	public:
+
+		TEST_METHOD(Constructor_1)
+		{
+
+		}
+
+		TEST_METHOD(Reflect_1) {
+
 		}
 	};
 }
