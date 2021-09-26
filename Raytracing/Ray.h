@@ -23,7 +23,7 @@ public:
 
 };
 
-Vector radiance(Ray ray);
+Vector radiance(Ray ray, int depth);
 
 float rayIntersectSphere(Ray ray, Sphere sphere);
 
