@@ -7,7 +7,9 @@
 #include "CreationImagePPM.h"
 #include "Sphere.h"
 #include "Material.h"
+#include "Object.h"
 #include <tuple>
+#include <random>
 
 
 class Ray
@@ -32,5 +34,9 @@ tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres);
 Point toneMap(Vector v);
 
 Point rayTrace(int x, int y);
+
+Vector mirror(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth);
+
+Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth);
 
 #endif // !RAY_H

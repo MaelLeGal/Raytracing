@@ -19,7 +19,7 @@ Ray::~Ray()
 
 Vector radiance(Ray ray, int depth) {
 
-	if (depth == 10) {
+	if (depth == 5) {
 		return Vector({ 1, 0, 1 });
 	}
 
@@ -31,9 +31,9 @@ Vector radiance(Ray ray, int depth) {
 		Sphere(Point({250,5000+500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
 		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
 
-		Sphere(Point({150,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
+		Sphere(Point({150,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
 		
-		Sphere(Point({350,350,350}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 2.4))
+		Sphere(Point({350,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 1.5))
 	}; 
 
 	vector<Sphere> scene = {
@@ -43,9 +43,6 @@ Vector radiance(Ray ray, int depth) {
 		Sphere(Point({250,5000 + 500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
 		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
 	};
-
-	
-
 	
 	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, spheres);
 	if (get<0>(intersect) == -1){
@@ -83,6 +80,8 @@ Vector radiance(Ray ray, int depth) {
 		Vector radianceTransmittedRayPixel;
 		bool outside;
 		float coef;
+		Vector contribRefract;
+		Vector contribReflect;
 		
 		lightPosition = Point({ 250,250,250 });
 		lightEmission = Vector({50000,50000,50000}); //Color and intensity of the lamp
@@ -91,14 +90,16 @@ Vector radiance(Ray ray, int depth) {
 
 		normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
 
-		switch (get<1>(intersect).material.materialBehaviour) {
+		//Sphere color
+		albedo = get<1>(intersect).material.material;
+
+		switch (get<1>(intersect).material.materialBehaviour) { //TODO Make function for each case and call it
 			case MaterialBehaviour::Diffuse:
 				directionToLight = Direction(((Vector)lightPosition - x).values);
 
 				x = x + directionToLight * 0.01; // Added an Epsilon for our object not to cast shadow on themselves
 
 				//Light
-				//normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
 				directionToLightNormalized = Direction(directionToLight.normalize().values);
 				lightDistance2 = directionToLight.dot(directionToLight);
 				lightCoef = normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); //Attenuation of the light by the distance to it.
@@ -110,59 +111,19 @@ Vector radiance(Ray ray, int depth) {
 				canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
 				visibility = canSeeLightSource ? Vector({ 1,1,1 }) : Vector({ 0,0,0 });
 
-				//Sphere color
-				red = get<1>(intersect).material.material.values[0];
-				green = get<1>(intersect).material.material.values[1];
-				blue = get<1>(intersect).material.material.values[2];
-				albedo = get<1>(intersect).material.material;
-
 				return Vector({ visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0] ,
 					visibility.values[1] * lightEmission.values[1] * lightCoef * albedo.values[1],
 					visibility.values[2] * lightEmission.values[2] * lightCoef * albedo.values[2] });
 				break;
+
 			case MaterialBehaviour::Mirror:
 
-				reflectedDirection = reflect(normal, ray.direction);
-				reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-				radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth+1);
-				if (radianceReflectedRayPixel.values[0] == -1) {
-					return albedo = Vector({ 0,0,0 });
-				}
-				else {
-					albedo = get<1>(intersect).material.material;
-					return albedo = Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
-				}
-
+				return mirror(ray, x, normal, intersect, albedo, depth);
 				break; //optional
 
 			case MaterialBehaviour::Glass:
-				outside = ray.direction.dot(normal) < 0;
-				transmittedDirection = refract(get<1>(intersect).material.indiceOfRefraction, normal, ray.direction, outside);
-				coef = get<0>(transmittedDirection);
-				if (coef == -1) {
-					reflectedDirection = reflect(normal, ray.direction);
-					reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-					radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
-					if (radianceReflectedRayPixel.values[0] == -1) {
-						return albedo = Vector({ 0,0,0 });
-					}
-					else {
-						albedo = get<1>(intersect).material.material;
-						return albedo = Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
-					}
-				}
-				else {
-					transmittedRay = Ray(Point((x + 0.03 * get<1>(transmittedDirection)).values), get<1>(transmittedDirection));
-					radianceTransmittedRayPixel = (Vector)radiance(transmittedRay, depth+1);
-					if (radianceTransmittedRayPixel.values[0] == -1) {
-						return albedo = Vector({ 0,0,0 });
-					}
-					else {
-						albedo = get<1>(intersect).material.material;
-						return albedo = Vector({ coef*radianceTransmittedRayPixel.values[0] * albedo.values[0], coef*radianceTransmittedRayPixel.values[1] * albedo.values[1], coef*radianceTransmittedRayPixel.values[2] * albedo.values[2] });
-					}
-				}
-				//cout << "Error not done yet" << endl; //TODO
+
+				return glass(ray, x, normal, intersect, albedo, depth);
 				break; //optional
 
 			 // you can have any number of case statements.
@@ -170,17 +131,6 @@ Vector radiance(Ray ray, int depth) {
 				cout << "Default for some reason" << endl;
 				return Vector({ -1,-1,-1 });
 		}
-
-
-
-		/*return Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0] ,
-			visibility.values[1] * lightEmission.values[1] * lightCoef * albedo.values[1],
-			visibility.values[2] * lightEmission.values[2] * lightCoef * albedo.values[2] });*///visibility * lightEmission * lightCoef * albedo;
-
-		/*return toneMap(Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * red ,
-			visibility.values[1] * lightEmission.values[1] * lightCoef * green,
-			visibility.values[2] * lightEmission.values[2] * lightCoef * blue }));
-		*/
 	}
 }
 
@@ -262,6 +212,84 @@ Point rayTrace(int x, int y) {
 	}
 	else {
 		return toneMap(color);
+	}
+}
+
+Vector mirror(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth) {
+
+	Direction reflectedDirection;
+	Ray reflectedRay;
+	Vector radianceReflectedRayPixel;
+
+	reflectedDirection = reflect(normal, ray.direction);
+	reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
+	radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
+	if (radianceReflectedRayPixel.values[0] == -1) {
+		return Vector({ 0,0,0 });
+	}
+	else {
+		return Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
+	}
+}
+
+Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth) {
+
+	tuple<float, Direction> transmittedDirection;
+	Ray transmittedRay;
+	Vector radianceTransmittedRayPixel;
+	bool outside;
+	float coef;
+	Vector contribRefract;
+
+	Direction reflectedDirection;
+	Ray reflectedRay;
+	Vector radianceReflectedRayPixel;
+	Vector contribReflect;
+
+	outside = ray.direction.dot(normal) < 0;
+	transmittedDirection = refract(get<1>(intersect).material.indiceOfRefraction, normal, ray.direction, outside);
+	coef = get<0>(transmittedDirection);
+	if (coef == -1) {
+		reflectedDirection = reflect(normal, ray.direction);
+		reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
+		radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
+		if (radianceReflectedRayPixel.values[0] == -1) {
+			return Vector({ 0,0,0 });
+		}
+		else {
+			albedo = get<1>(intersect).material.material;
+			return Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
+		}
+	}
+	else {
+
+		default_random_engine generator;
+		uniform_real_distribution<float> distribution(0, 1);
+		float r = distribution(generator);
+
+		if (r < coef) {
+			transmittedRay = Ray(Point((x + 0.03 * get<1>(transmittedDirection)).values), get<1>(transmittedDirection));
+			radianceTransmittedRayPixel = (Vector)radiance(transmittedRay, depth + 1);
+			if (radianceTransmittedRayPixel.values[0] == -1) {
+				contribRefract = Vector({ 0,0,0 });
+			}
+			else {
+				contribRefract = Vector({ radianceTransmittedRayPixel.values[0] * albedo.values[0], radianceTransmittedRayPixel.values[1] * albedo.values[1], radianceTransmittedRayPixel.values[2] * albedo.values[2] });
+			}
+			return (1 / coef) * contribRefract * coef;
+		}
+		else {
+			reflectedDirection = reflect(normal, ray.direction);
+			reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
+			radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
+			if (radianceReflectedRayPixel.values[0] == -1) {
+				contribReflect = Vector({ 0,0,0 });
+			}
+			else {
+				contribReflect = Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
+			}
+			return (1 / (1 - coef)) * contribReflect * (1 - coef);
+		}
 	}
 }
 

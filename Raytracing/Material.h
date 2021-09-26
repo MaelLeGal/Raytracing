@@ -5,6 +5,7 @@
 #include "Vector.h"
 #include "Direction.h"
 #include <tuple>
+#include <random>
 
 enum class MaterialBehaviour {Diffuse, Glass, Mirror};
 
