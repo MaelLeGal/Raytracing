@@ -652,10 +652,22 @@ namespace UnitTest
 
 		TEST_METHOD(Radiance_1)
 		{
+			vector<Sphere> scene = {																		// Need to be a parameter of radiance
+				Sphere(Point({5000 + 500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
+				Sphere(Point({-5000,250,0}),5000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
+				Sphere(Point({250,-5000,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
+				Sphere(Point({250,5000 + 500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
+				Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
+
+				Sphere(Point({150,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
+
+				Sphere(Point({350,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 1.5))
+			};
+			
 			Point origin = Point({ 250,250,0 });
 			Direction direction = Direction({ 0,0,1 });
 			Ray ray = Ray(origin, direction);
-			Vector pixel = radiance(ray);
+			Vector pixel = radiance(ray,0, scene);
 
 			Assert::AreEqual((float)0.8, pixel.values[0]);
 			Assert::AreEqual((float)0.8, pixel.values[1]);

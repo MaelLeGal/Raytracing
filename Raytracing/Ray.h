@@ -10,6 +10,7 @@
 #include "Object.h"
 #include <tuple>
 #include <random>
+#include <iostream>
 
 
 class Ray
@@ -25,18 +26,18 @@ public:
 
 };
 
-Vector radiance(Ray ray, int depth);
+Vector radiance(Ray ray, int depth, vector<Sphere> scene);
 
 float rayIntersectSphere(Ray ray, Sphere sphere);
 
-tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres);
+tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> scene);
 
 Point toneMap(Vector v);
 
-Point rayTrace(int x, int y);
+Point rayTrace(int x, int y, vector<Sphere> scene);
 
-Vector mirror(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth);
+Vector mirror(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
 
-Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth);
+Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
 
 #endif // !RAY_H

@@ -17,34 +17,13 @@ Ray::~Ray()
 {
 }
 
-Vector radiance(Ray ray, int depth) {
+Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 
 	if (depth == 5) {
 		return Vector({ 1, 0, 1 });
 	}
-
-	//Sphere sphere = Sphere(Point({ 250,250,1000 }), 150, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse));
-	vector<Sphere> spheres = {																		// Need to be a parameter of radiance
-		Sphere(Point({5000+500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
-		Sphere(Point({-5000,250,0}),5000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
-		Sphere(Point({250,-5000,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
-		Sphere(Point({250,5000+500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
-		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
-
-		Sphere(Point({150,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
-		
-		Sphere(Point({350,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 1.5))
-	}; 
-
-	vector<Sphere> scene = {
-		Sphere(Point({5000 + 500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
-		Sphere(Point({-5000,250,0}),5000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
-		Sphere(Point({250,-5000,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
-		Sphere(Point({250,5000 + 500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
-		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
-	};
 	
-	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, spheres);
+	tuple<float,Sphere> intersect = rayIntersectSpheres(ray, scene);
 	if (get<0>(intersect) == -1){
 		return Vector({ -1,-1,-1 });
 	}
@@ -105,7 +84,7 @@ Vector radiance(Ray ray, int depth) {
 				lightCoef = normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); //Attenuation of the light by the distance to it.
 
 				// Shadow
-				tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), spheres);
+				tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), scene);
 				intersectLight = get<0>(tupleIntersectSphere);
 				sphereIntersect = get<1>(tupleIntersectSphere);
 				canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
@@ -118,12 +97,12 @@ Vector radiance(Ray ray, int depth) {
 
 			case MaterialBehaviour::Mirror:
 
-				return mirror(ray, x, normal, intersect, albedo, depth);
+				return mirror(ray, scene, x, normal, intersect, albedo, depth);
 				break; //optional
 
 			case MaterialBehaviour::Glass:
 
-				return glass(ray, x, normal, intersect, albedo, depth);
+				return glass(ray, scene, x, normal, intersect, albedo, depth);
 				break; //optional
 
 			 // you can have any number of case statements.
@@ -172,9 +151,9 @@ float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++2017 op
 
 }
 
-tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres) {
+tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> scene) {
 	vector<tuple<float, Sphere>> intersections;
-	for (auto sphere : spheres) {
+	for (Sphere sphere : scene) {
 		intersections.push_back(make_tuple(rayIntersectSphere(ray,sphere),sphere));
 	}
 
@@ -189,7 +168,7 @@ tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> spheres) {
 
 }
 
-Point rayTrace(int x, int y) {
+Point rayTrace(int x, int y, vector<Sphere> scene) {
 	Vector pointNearPlane;
 	Vector pointNearPlaneMoved;
 	Vector pointFarPlane;
@@ -206,7 +185,7 @@ Point rayTrace(int x, int y) {
 
 	Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
 
-	Vector color = radiance(ray,0);
+	Vector color = radiance(ray,0, scene);
 	if (color.values[0] == -1) {
 		return Point({ 0,0,0 });
 	}
@@ -215,7 +194,7 @@ Point rayTrace(int x, int y) {
 	}
 }
 
-Vector mirror(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth) {
+Vector mirror(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
 
 	Direction reflectedDirection;
 	Ray reflectedRay;
@@ -223,7 +202,7 @@ Vector mirror(Ray ray, Vector x, Direction normal, tuple<float, Object> intersec
 
 	reflectedDirection = reflect(normal, ray.direction);
 	reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-	radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
+	radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1, scene);
 	if (radianceReflectedRayPixel.values[0] == -1) {
 		return Vector({ 0,0,0 });
 	}
@@ -232,7 +211,7 @@ Vector mirror(Ray ray, Vector x, Direction normal, tuple<float, Object> intersec
 	}
 }
 
-Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth) {
+Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
 
 	tuple<float, Direction> transmittedDirection;
 	Ray transmittedRay;
@@ -250,16 +229,7 @@ Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect
 	transmittedDirection = refract(get<1>(intersect).material.indiceOfRefraction, normal, ray.direction, outside);
 	coef = get<0>(transmittedDirection);
 	if (coef == -1) {
-		reflectedDirection = reflect(normal, ray.direction);
-		reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-		radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
-		if (radianceReflectedRayPixel.values[0] == -1) {
-			return Vector({ 0,0,0 });
-		}
-		else {
-			albedo = get<1>(intersect).material.material;
-			return Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
-		}
+		return mirror(ray, scene, x, normal, intersect, albedo, depth);
 	}
 	else {
 
@@ -269,7 +239,7 @@ Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect
 
 		if (r < coef) {
 			transmittedRay = Ray(Point((x + 0.03 * get<1>(transmittedDirection)).values), get<1>(transmittedDirection));
-			radianceTransmittedRayPixel = (Vector)radiance(transmittedRay, depth + 1);
+			radianceTransmittedRayPixel = (Vector)radiance(transmittedRay, depth + 1, scene);
 			if (radianceTransmittedRayPixel.values[0] == -1) {
 				contribRefract = Vector({ 0,0,0 });
 			}
@@ -281,7 +251,7 @@ Vector glass(Ray ray, Vector x, Direction normal, tuple<float, Object> intersect
 		else {
 			reflectedDirection = reflect(normal, ray.direction);
 			reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-			radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1);
+			radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1, scene);
 			if (radianceReflectedRayPixel.values[0] == -1) {
 				contribReflect = Vector({ 0,0,0 });
 			}
@@ -298,11 +268,22 @@ int main() {
 	vector<int> dimensions = { 500,500 };
 	vector<vector<vector<int>>> pixels(dimensions[0], vector<vector<int>>(dimensions[1]));
 
+	vector<Sphere> scene = {																		// Need to be a parameter of radiance
+		Sphere(Point({5000 + 500,250,0}),5000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
+		Sphere(Point({-5000,250,0}),5000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
+		Sphere(Point({250,-5000,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
+		Sphere(Point({250,5000 + 500,0}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Bottom
+		Sphere(Point({250,250 ,5000 + 500}),5000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
+
+		Sphere(Point({150,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
+
+		Sphere(Point({350,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 1.5))
+	};
 
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {
 
-			vector<float> pixel = rayTrace(i, j).values;
+			vector<float> pixel = rayTrace(i, j, scene).values;
 
 			pixels[i][j].insert(pixels[i][j].end(), pixel.begin(), pixel.end());
 
