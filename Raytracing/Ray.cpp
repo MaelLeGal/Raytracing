@@ -31,13 +31,26 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 		
 		Vector x;
 
+		int numberOfRayToLight = 10;
+		float r;
+		float r2;
+		Ray randomRayOnLight;
+		Direction randomDirectionToLight;
+		random_device rd;
+		default_random_engine generator(rd());
+		uniform_real_distribution<float> theta(0, 2 * M_PI);
+		uniform_real_distribution<float> phi(0, M_PI);
+
+		Vector pixelValue = Vector({ 0,0,0 });
+
+		Sphere light = Sphere(Point({ 250,250,250 }), 60);
 		Point lightPosition;
 		Vector lightEmission;
 		Direction normal;
 		Direction directionToLight;
 		Direction directionToLightNormalized;
 		float lightDistance2;
-		float lightCoef;
+		float lightCoef = 0;
 
 		tuple<float, Sphere> tupleIntersectSphere;
 		float intersectLight;
@@ -63,7 +76,7 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 		Vector contribReflect;
 		
 		lightPosition = Point({ 250,250,250 });
-		lightEmission = Vector({50000,50000,50000}); //Color and intensity of the lamp
+		lightEmission = Vector({0,50000,15000}); //Color and intensity of the lamp
 
 		x = (Vector)ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
 
@@ -74,25 +87,32 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 
 		switch (get<1>(intersect).material.materialBehaviour) { //TODO Make function for each case and call it
 			case MaterialBehaviour::Diffuse:
-				directionToLight = Direction(((Vector)lightPosition - x).values);
-
+				directionToLight = Direction(((Vector)light.center - x).values);
 				x = x + directionToLight * 0.01; // Added an Epsilon for our object not to cast shadow on themselves
 
-				//Light
-				directionToLightNormalized = Direction(directionToLight.normalize().values);
-				lightDistance2 = directionToLight.dot(directionToLight);
-				lightCoef = normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); //Attenuation of the light by the distance to it.
+				for (int i = 0; i < numberOfRayToLight; i++) {
+					r = theta(generator);
+					r2 = phi(generator);
 
-				// Shadow
-				tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), scene);
-				intersectLight = get<0>(tupleIntersectSphere);
-				sphereIntersect = get<1>(tupleIntersectSphere);
-				canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
-				visibility = canSeeLightSource ? Vector({ 1,1,1 }) : Vector({ 0,0,0 });
+					randomDirectionToLight = Direction(((Vector(light.center.values) + Vector({ light.radius * cos(r) * sin(r2) , light.radius * sin(r) * sin(r2), light.radius*cos(r2)})) - x).values);
 
-				return Vector({ visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0] ,
+					randomRayOnLight = Ray(Point(x.values), randomDirectionToLight);
+
+					directionToLightNormalized = Direction(randomRayOnLight.direction.normalize().values);
+					lightDistance2 = randomRayOnLight.direction.dot(randomRayOnLight.direction);
+					lightCoef += normal.dot(directionToLightNormalized / lightDistance2) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2);
+
+					tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), scene);
+					intersectLight = get<0>(tupleIntersectSphere);
+					sphereIntersect = get<1>(tupleIntersectSphere);
+					canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
+					visibility = canSeeLightSource ? Vector({ 1,1,1 }) : Vector({ 0,0,0 });
+
+					pixelValue = pixelValue + Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0] ,
 					visibility.values[1] * lightEmission.values[1] * lightCoef * albedo.values[1],
 					visibility.values[2] * lightEmission.values[2] * lightCoef * albedo.values[2] });
+				}
+				return pixelValue / numberOfRayToLight;
 				break;
 
 			case MaterialBehaviour::Mirror:
@@ -127,6 +147,7 @@ Point toneMap(Vector v) {
 }
 
 float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++2017 optional
+
 
 	Direction oc = sphere.center - ray.origin;
 	float r2 = sphere.radius * sphere.radius;
@@ -169,6 +190,9 @@ tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> scene) {
 }
 
 Point rayTrace(int x, int y, vector<Sphere> scene) {
+	
+	int numberOfRayPerPixel = 10;
+
 	Vector pointNearPlane;
 	Vector pointNearPlaneMoved;
 	Vector pointFarPlane;
@@ -185,13 +209,27 @@ Point rayTrace(int x, int y, vector<Sphere> scene) {
 
 	Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
 
-	Vector color = radiance(ray,0, scene);
+	//vector<Vector> contribs = vector<Vector>();
+	Vector contrib = Vector({0,0,0});
+	Vector color;
+
+	for (int i = 0; i < numberOfRayPerPixel; i++) {
+		color = radiance(ray, 0, scene);
+		if (contrib.values[0] != -1) {
+			contrib = contrib + color;
+		}
+	}
+	contrib = contrib / numberOfRayPerPixel;
+
+	return toneMap(contrib);
+
+	/*Vector color = radiance(ray, 0, scene);
 	if (color.values[0] == -1) {
 		return Point({ 0,0,0 });
 	}
 	else {
 		return toneMap(color);
-	}
+	}*/
 }
 
 Vector mirror(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
@@ -233,7 +271,8 @@ Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<fl
 	}
 	else {
 
-		default_random_engine generator;
+		random_device rd;
+		default_random_engine generator(rd());
 		uniform_real_distribution<float> distribution(0, 1);
 		float r = distribution(generator);
 
@@ -249,15 +288,8 @@ Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<fl
 			return (1 / coef) * contribRefract * coef;
 		}
 		else {
-			reflectedDirection = reflect(normal, ray.direction);
-			reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-			radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1, scene);
-			if (radianceReflectedRayPixel.values[0] == -1) {
-				contribReflect = Vector({ 0,0,0 });
-			}
-			else {
-				contribReflect = Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
-			}
+
+			contribReflect = mirror(ray, scene, x, normal, intersect, albedo, depth);
 			return (1 / (1 - coef)) * contribReflect * (1 - coef);
 		}
 	}
@@ -277,7 +309,7 @@ int main() {
 
 		Sphere(Point({150,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
 
-		Sphere(Point({350,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 1.5))
+		Sphere(Point({350,350,250}),80, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 2.4))
 	};
 
 	for (int i = 0; i < dimensions[0]; i++) {

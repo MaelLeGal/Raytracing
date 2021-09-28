@@ -1,5 +1,6 @@
 #ifndef RAY_H
 #define RAY_H
+#define _USE_MATH_DEFINES
 
 #include "Direction.h"
 #include "Point.h"
@@ -11,6 +12,7 @@
 #include <tuple>
 #include <random>
 #include <iostream>
+#include <math.h>
 
 
 class Ray
