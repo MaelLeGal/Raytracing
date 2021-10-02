@@ -142,7 +142,7 @@ Vector operator*(float scale, Vector vec) {
 	return Vector(values);
 }
 
-float Vector::operator*(Vector vec) {
+/*float Vector::operator*(Vector vec) {
 
 	float value = 0;
 	float vecSize = vec.values.size();
@@ -153,6 +153,17 @@ float Vector::operator*(Vector vec) {
 
 	return value;
 
+}*/
+Vector Vector::operator*(Vector vec) {
+
+	vector<float> values;
+	float vecSize = vec.values.size();
+
+	for (int i = 0; i < vecSize; i++) {
+		values.push_back(this->values[i] * vec.values[i]);
+	}
+
+	return Vector(values);
 }
 
 Vector Vector::operator/(float divider) {

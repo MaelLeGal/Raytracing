@@ -32,14 +32,22 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene);
 
 float rayIntersectSphere(Ray ray, Sphere sphere);
 
-tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> scene);
+tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> scene); 
 
 Point toneMap(Vector v);
 
 Point rayTrace(int x, int y, vector<Sphere> scene);
 
+Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth);
+
 Vector mirror(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
 
 Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
+
+tuple<Direction,float> sample_cosinus(float u, float v);
+
+tuple<Direction, Direction> make_base(Direction normal);
+
+Direction rotate_vector(Direction normal, Direction indirectDirection);
 
 #endif // !RAY_H
