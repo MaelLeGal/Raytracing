@@ -24,6 +24,7 @@ public:
 	float sqr_norm();
 	Vector normalize();
 	float dot(Vector vec);
+	Vector cross(Vector vec);
 	string ToString();
 
 	Vector operator+(Vector vec2);
