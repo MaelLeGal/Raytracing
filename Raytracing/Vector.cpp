@@ -4,60 +4,104 @@
 Vector::Vector() {
 };
 
-Vector::Vector(vector<float> values) {
-	this->values = values;
+Vector::Vector(float x, float y, float z) {
+	//this->values = values;
+	this->data[0] = x;
+	this->data[1] = y;
+	this->data[2] = z;
+}
+
+Vector::Vector(float data_[3]) {
+	//this->values = values;
+	//cout << this->data[0] << endl;
+	/*cout << "Start constructor vector" << endl;
+	cout << data_[0] << endl;
+	cout << data_[1] << endl;
+	cout << data_[2] << endl;*/
+	//this->data = data_;
+	this->data[0] = data_[0];
+	this->data[1] = data_[1];
+	this->data[2] = data_[2];
+
+	/*cout << this->data[0] << endl;
+	cout << this->data[1] << endl;
+	cout << this->data[2] << endl;
+	cout << "End constructor vector" << endl;*/
 }
 
 float Vector::norm() {
 	
-	float val = 0;
-	for (auto value : this->values) {
+	/*float val = 0;
+	for (int i = 0; i < 3; i++) {
+		val += this->data[i] * this->data[i];
+	}*/
+
+	/*for (auto value : this->values) {
 		val += value * value;
-	}
-	return sqrt(val);
+	}*/
+
+	return sqrt(sqr_norm());
 
 }
 
 float Vector::sqr_norm() {
 	float val = 0;
-	for (auto value : this->values) {
-		val += value * value;
+	for (int i = 0; i < 3; i++) {
+		val += data[i] * data[i];
 	}
+
+	/*for (auto value : this->values) {
+		val += value * value;
+	}*/
 	return val;
 }
 
 Vector Vector::normalize() {
 
+	float data_[3];
 	float divider = this->norm();
-	vector<float> values;
+	for (int i = 0; i < 3; i++) {
+		data_[i] = this->data[i] / divider;
+	}
+	return Vector(data_); // TODO maybe no return or return this normalized;
+
+	/*vector<float> values;
 	for (auto val : this->values)
 	{
 		values.push_back(val / divider);
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 float Vector::dot(Vector vec) {
 
 	float val = 0;
-	if (this->values.size() == vec.values.size()) {
+	for (int i = 0; i < 3; i++) {
+		val += this->data[i] * vec.data[i];
+	}
+
+	/*if (this->values.size() == vec.values.size()) {
 		for (int i = 0; i < this->values.size(); i++) {
 			val += this->values[i] * vec.values[i];
 		}
 	}
 	else {
 		cout << "The two vectors don't have the same length" << endl;
-	}
+	}*/
 	return val;
 }
 
 string Vector::ToString() {
 	string line = "{";
-	for (float val : this->values)
+
+	for (int i = 0; i < 3; i++) {
+		line += to_string(data[i]) + ", ";
+	}
+	/*for (float val : this->values)
 	{
 		line += std::to_string(val) + ", ";
-	}
+	}*/
 
 	line += "}";
 
@@ -65,16 +109,26 @@ string Vector::ToString() {
 }
 
 Vector Vector::operator+(Vector vec2) {
-	vector<float> values;
-	float thisSize = this->values.size();
-	float vec2Size = vec2.values.size();
 
+	float data_[3];
+	for(int i = 0; i < 3; i++){
+		data_[i] = this->data[i] + vec2.data[i];
+	}
+	return Vector(data_);
+
+	/*float thisSize = this->values.size();
+	float vec2Size = vec2.values.size();
+	vector<float> values(thisSize);
+	
 	if (thisSize == vec2Size) {
 		for (int i = 0; i < thisSize; i++) {
-			values.push_back(this->values[i] + vec2.values[i]);
+			values[i] = this->values[i] + vec2.values[i];
 		}
 	}
 	else {
+		cout << "Error, the two vectors do not have the same size" << endl;
+	}*/
+	/*else {
 		if (thisSize < vec2Size) {
 			for (int i = 0; i < thisSize; i++) {
 				values.push_back(this->values[i] + vec2.values[i]);
@@ -89,11 +143,18 @@ Vector Vector::operator+(Vector vec2) {
 		}
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 Vector Vector::operator-(Vector vec2) {
-	vector<float> values;
+
+	float data_[3];
+	for (int i = 0; i < 3; i++) {
+		data_[i] = this->data[i] - vec2.data[i];
+	}
+	return Vector(data_);
+
+	/*vector<float> values;
 	float thisSize = this->values.size();
 	float vec2Size = vec2.values.size();
 
@@ -117,29 +178,43 @@ Vector Vector::operator-(Vector vec2) {
 		}
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 Vector Vector::operator*(float scale) {
-	vector<float> values;
-	float thisSize = this->values.size();
 
+	float data_[3];
+	for (int i = 0; i < 3; i++) {
+		data_[i] = this->data[i] * scale;
+	}
+	return Vector(data_);
+
+	/*float thisSize = this->values.size();
+	vector<float> values(thisSize);
+	
 	for (int i = 0; i < thisSize; i++) {
-		values.push_back(this->values[i] * scale);
+		values[i] = this->values[i] * scale;
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 Vector operator*(float scale, Vector vec) {
-	vector<float> values;
-	float vecSize = vec.values.size();
+
+	float data_[3];
+	for (int i = 0; i < 3; i++) {
+		data_[i] = vec.data[i] * scale;
+	}
+	return Vector(data_);
+
+	/*float vecSize = vec.values.size();
+	vector<float> values(vecSize);
 
 	for (int i = 0; i < vecSize; i++) {
-		values.push_back(vec.values[i] * scale);
+		values[i]  = vec.values[i] * scale;
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 /*float Vector::operator*(Vector vec) {
@@ -156,25 +231,37 @@ Vector operator*(float scale, Vector vec) {
 }*/
 Vector Vector::operator*(Vector vec) {
 
-	vector<float> values;
+	float data_[3];
+	for (int i = 0; i < 3; i++) {
+		data_[i] = this->data[i] * vec.data[i];
+	}
+	return Vector(data_);
+	
+	/*vector<float> values;
 	float vecSize = vec.values.size();
 
 	for (int i = 0; i < vecSize; i++) {
 		values.push_back(this->values[i] * vec.values[i]);
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 Vector Vector::operator/(float divider) {
-	vector<float> values;
+	float data_[3];
+	for (int i = 0; i < 3; i++) {
+		data_[i] = this->data[i] / divider;
+	}
+	return Vector(data_);
+
+	/*vector<float> values;
 	float thisSize = this->values.size();
 
 	for (int i = 0; i < thisSize; i++) {
 		values.push_back(this->values[i] / divider);
 	}
 
-	return Vector(values);
+	return Vector(values);*/
 }
 
 // Can't compile without ?!!

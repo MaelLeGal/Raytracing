@@ -12,10 +12,13 @@ using namespace std;
 class Vector {
 public:
 
-	vector<float> values;
+	//vector<float> values;
+	float data[3];
 
 	Vector();
-	Vector(vector<float> values);
+	//Vector(vector<float> values);
+	Vector(float x, float y, float z);
+	Vector(float data[3]);
 
 	float norm();
 	float sqr_norm();

@@ -38,11 +38,11 @@ Point toneMap(Vector v);
 
 Point rayTrace(int x, int y, vector<Sphere> scene);
 
-Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth);
+Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Point x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth);
 
-Vector mirror(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
+Vector mirror(Ray ray, vector<Sphere> scene, Point x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
 
-Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
+Vector glass(Ray ray, vector<Sphere> scene, Point x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth);
 
 tuple<Direction,float> sample_cosinus(float u, float v);
 

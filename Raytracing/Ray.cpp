@@ -20,11 +20,13 @@ Ray::~Ray()
 Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 
 	float r;
-	float coefRR = depth == 0 ? 1 : 0.5;
-	random_device rd;
-	default_random_engine generator(rd());
-	uniform_real_distribution<float> urd(0,1);
-	r = urd(generator);
+	float coefRR = depth == 0 ? 1 : (float)0.5;
+	//random_device rd;
+	//default_random_engine generator(rd());
+	//uniform_real_distribution<float> urd(0,1);
+	//r = urd(generator);
+	//srand(time(nullptr));
+	r = ((float)rand() / (RAND_MAX));
 
 	if (r > coefRR) {
 		return Vector({ 0,0,0 });
@@ -40,7 +42,7 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 	}
 	else {
 		
-		Vector x;
+		Point x;
 
 		int numberOfRayToLight = 2;
 		Sphere light = Sphere(Point({ 125,10,125 }), 24);
@@ -54,9 +56,9 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 		lightPosition = Point({ 125,10,125 });
 		lightEmission = Vector({2000,2000,2000}); //Color and intensity of the lamp
 
-		x = (Vector)ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
+		x = ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
 
-		normal = Direction((x - (Vector)get<1>(intersect).center).normalize().values);
+		normal = Direction((x - get<1>(intersect).center).normalize());
 
 		//Sphere color
 		albedo = get<1>(intersect).material.material;
@@ -86,16 +88,26 @@ Vector radiance(Ray ray, int depth, vector<Sphere> scene) {
 }
 
 Point toneMap(Vector v) {
+	float data_[3];
+	float value;
+	for (int i = 0; i < 3; i++) {
+		value = floor(powf(v.data[i], (float)1.0 / (float)2.2) * 255); // pow (val, 1/2.2) = correction gamma
+		value = value > 255 ? 255 : value;
+		value = value < 0 ? 0 : value;
+		data_[i] = value;
+	}
+	return Point(data_);
+
 	//int min = *min_element(v.values.begin(), v.values.end());
-	vector<float> values;
-	for (auto val : v.values)
+	//vector<float> values;
+	/*for (auto val : v.values)
 	{
 		float value = floor(pow(val, 1.0 / 2.2) * 255); // pow (val, 1/2.2) = correction gamma
 		value = value > 255 ? 255 : value;
 		value = value < 0 ? 0 : value;
 		values.push_back(value);
 	}
-	return Point(values);
+	return Point(values);*/
 }
 
 float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++2017 optional
@@ -125,9 +137,14 @@ float rayIntersectSphere(Ray ray, Sphere sphere) { //Change to return c++2017 op
 }
 
 tuple<float, Sphere> rayIntersectSpheres(Ray ray, vector<Sphere> scene) {
-	vector<tuple<float, Sphere>> intersections;
-	for (Sphere sphere : scene) {
+	int numberOfSphere = scene.size();
+	vector<tuple<float, Sphere>> intersections(numberOfSphere);
+	/*for (Sphere sphere : scene) {
 		intersections.push_back(make_tuple(rayIntersectSphere(ray,sphere),sphere));
+	}*/
+
+	for (int i = 0; i < numberOfSphere; i++) {
+		intersections[i] = make_tuple(rayIntersectSphere(ray, scene[i]), scene[i]);
 	}
 
 	intersections.erase(remove_if(intersections.begin(), intersections.end(), [](const tuple<float,Sphere>& x) -> bool {return get<0>(x) == -1;}), intersections.end());
@@ -151,47 +168,39 @@ Point rayTrace(int x, int y, vector<Sphere> scene) {
 
 	Direction cameraDirection;
 
-	float fov = 1.001;
+	float fov = (float)1.001;
 
-	pointNearPlane = Vector({ (float)y,(float)x,0 });
-	pointNearPlaneMoved = pointNearPlane - Vector({ 125,125,0 }); //Move the point on the plane -250:250
-	pointFarPlane = Vector({ pointNearPlaneMoved.values[0] * fov,pointNearPlaneMoved.values[1] * fov,1 }); //Apply the fov
+	pointNearPlane = Vector((float)y,(float)x,0);
+	pointNearPlaneMoved = pointNearPlane - Vector(125,125,0); //Move the point on the plane -250:250
+	pointFarPlane = Vector(pointNearPlaneMoved.data[0] * fov, pointNearPlaneMoved.data[1] * fov, 1);//Vector({ pointNearPlaneMoved.values[0] * fov,pointNearPlaneMoved.values[1] * fov,1 }); //Apply the fov
 
-	cameraDirection = Direction((pointFarPlane - pointNearPlaneMoved).normalize().values);
+	cameraDirection = Direction((pointFarPlane - pointNearPlaneMoved).normalize());
 
-	Ray ray = Ray(Point(pointNearPlane.values), cameraDirection);
+	Ray ray = Ray(Point(pointNearPlane.data), cameraDirection);
 
-	//vector<Vector> contribs = vector<Vector>();
 	Vector contrib = Vector({0,0,0});
 	Vector color;
 
 	for (int i = 0; i < numberOfRayPerPixel; i++) {
 		color = radiance(ray, 0, scene);
-		if (contrib.values[0] != -1) {
+		if (contrib.data[0] != -1) {
 			contrib = contrib + color;
 		}
 	}
-	contrib = contrib / numberOfRayPerPixel;
+	contrib = contrib / (float)numberOfRayPerPixel;
 
 	return toneMap(contrib);
 
-	/*Vector color = radiance(ray, 0, scene);
-	if (color.values[0] == -1) {
-		return Point({ 0,0,0 });
-	}
-	else {
-		return toneMap(color);
-	}*/
 }
 
-Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth) {
+Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Point x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth) {
 	
 	float r;
 	float r2;
 	Ray randomRayOnLight;
 	Direction randomDirectionToLight;
 	random_device rd;
-	default_random_engine generator(rd());
+	minstd_rand generator(rd());
 	uniform_real_distribution<float> theta(0, 2 * M_PI);
 	uniform_real_distribution<float> phi(0, M_PI);
 
@@ -206,13 +215,13 @@ Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Vector x, 
 	bool canSeeLightSource;
 	Vector visibility;
 
-	Vector contribDirect = Vector({ 0,0,0 });
+	Vector contribDirect = Vector(0,0,0);
 
 	Direction indirectDirection;
 	bool sameSide;
 	Ray indirectRay;
 	Vector radianceContribindirect;
-	Vector contribIndirect = Vector({ 0,0,0 });
+	Vector contribIndirect = Vector(0,0,0);
 	tuple<Direction, float> indirectDirCoef;
 	float coefIndirect = 1;
 	float pdf;
@@ -221,30 +230,35 @@ Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Vector x, 
 	float u;
 	float v;
 	
-	directionToLight = Direction(((Vector)light.center - x).values);
-	x = x + directionToLight * 0.01; // Added an Epsilon for our object not to cast shadow on themselves
-
+	directionToLight = Direction((light.center - x));
+	x = x + directionToLight * (float)0.01; // Added an Epsilon for our object not to cast shadow on themselves
 	for (int i = 0; i < numberOfRayToLight; i++) {
 		r = theta(generator);
 		r2 = phi(generator);
+		//r = ((float)rand() / (RAND_MAX)) * (float)(2 * M_PI);
+		//r2 = ((float)rand() / (RAND_MAX)) * (float)(M_PI);
 
-		randomDirectionToLight = Direction(((Vector(light.center.values) + Vector({ light.radius * cos(r) * sin(r2) , light.radius * sin(r) * sin(r2), light.radius * cos(r2) })) - x).values);
 
-		randomRayOnLight = Ray(Point(x.values), randomDirectionToLight);
+		randomDirectionToLight = Direction(((Vector(light.center) + Vector({ light.radius * cos(r) * sin(r2) , light.radius * sin(r) * sin(r2), light.radius * cos(r2) })) - x));
+		//randomDirectionToLight = Direction(Vector({ light.center.values[0] - r + 1, light.center.values[1] - r2 + 1, light.center.values[2] - r3 + 1 }) - x);
 
-		directionToLightNormalized = Direction(randomRayOnLight.direction.normalize().values);
+
+		randomRayOnLight = Ray(x, randomDirectionToLight);
+
+		directionToLightNormalized = Direction(randomRayOnLight.direction.normalize());
 		lightDistance2 = randomRayOnLight.direction.dot(randomRayOnLight.direction);
-		lightCoef += normal.dot(directionToLightNormalized /(M_PI*lightDistance2)) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); // distance * Pi
+		lightCoef += normal.dot(directionToLightNormalized /(float)(M_PI*lightDistance2)) < 0 ? 0 : normal.dot(directionToLightNormalized / lightDistance2); // distance * Pi
 
-		tupleIntersectSphere = rayIntersectSpheres(Ray(Point(x.values), directionToLightNormalized), scene);
+		tupleIntersectSphere = rayIntersectSpheres(Ray(x, directionToLightNormalized), scene);
 		intersectLight = get<0>(tupleIntersectSphere);
 		sphereIntersect = get<1>(tupleIntersectSphere);
 		canSeeLightSource = (intersectLight == -1 ? true : ((intersectLight * intersectLight) > lightDistance2));
-		visibility = canSeeLightSource ? Vector({ 1,1,1 }) : Vector({ 0,0,0 });
+		visibility = canSeeLightSource ? Vector(1,1,1) : Vector(0,0,0);
 
-		contribDirect = contribDirect + Vector({ visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0],
+		contribDirect = contribDirect + (visibility * lightEmission * lightCoef * albedo);
+			/*Vector({visibility.values[0] * lightEmission.values[0] * lightCoef * albedo.values[0],
 		visibility.values[1] * lightEmission.values[1] * lightCoef * albedo.values[1],
-		visibility.values[2] * lightEmission.values[2] * lightCoef * albedo.values[2] });
+		visibility.values[2] * lightEmission.values[2] * lightCoef * albedo.values[2] });*/
 
 
 		u = u_distrib(generator);
@@ -261,37 +275,38 @@ Vector diffuse(Ray ray, int numberOfRayToLight, vector<Sphere> scene, Vector x, 
 		}*/
 		coefIndirect = (indirectDirection.dot(normal) / M_PI) / pdf;
 
-		indirectRay = Ray(Point((x + 0.01 * indirectDirection).values), indirectDirection);
-		radianceContribindirect = (Vector)radiance(indirectRay, depth + 1, scene);
-		if (radianceContribindirect.values[0] == -1) {
-			contribIndirect = contribIndirect + Vector({ 0,0,0 });
+		indirectRay = Ray(x + 0.01 * indirectDirection, indirectDirection);
+		radianceContribindirect = radiance(indirectRay, depth + 1, scene);
+		if (radianceContribindirect.data[0] == -1) {
+			contribIndirect = contribIndirect + Vector(0,0,0);
 		}
 		else {
-			contribIndirect = contribIndirect + Vector({ radianceContribindirect.values[0] * albedo.values[0], radianceContribindirect.values[1] * albedo.values[1], radianceContribindirect.values[2] * albedo.values[2] });
+			contribIndirect = contribIndirect + (radianceContribindirect * albedo);//Vector({ radianceContribindirect.values[0] * albedo.values[0], radianceContribindirect.values[1] * albedo.values[1], radianceContribindirect.values[2] * albedo.values[2] });
 		}
 	}
 
 	return (contribDirect + (contribIndirect * coefIndirect)) / numberOfRayToLight;
 }
 
-Vector mirror(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
+Vector mirror(Ray ray, vector<Sphere> scene, Point x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
 
 	Direction reflectedDirection;
 	Ray reflectedRay;
 	Vector radianceReflectedRayPixel;
 
 	reflectedDirection = reflect(normal, ray.direction);
-	reflectedRay = Ray(Point((x + 0.01 * reflectedDirection).values), reflectedDirection);
-	radianceReflectedRayPixel = (Vector)radiance(reflectedRay, depth + 1, scene);
-	if (radianceReflectedRayPixel.values[0] == -1) {
-		return Vector({ 0,0,0 });
+	reflectedRay = Ray(x + 0.01 * reflectedDirection, reflectedDirection);
+	radianceReflectedRayPixel = radiance(reflectedRay, depth + 1, scene);
+	if (radianceReflectedRayPixel.data[0] == -1) {
+		return Vector(0,0,0);
 	}
 	else {
-		return Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
+		return radianceReflectedRayPixel * albedo;
+		//Vector({ radianceReflectedRayPixel.values[0] * albedo.values[0], radianceReflectedRayPixel.values[1] * albedo.values[1], radianceReflectedRayPixel.values[2] * albedo.values[2] });
 	}
 }
 
-Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
+Vector glass(Ray ray, vector<Sphere> scene, Point x, Direction normal, tuple<float, Sphere> intersect, Vector albedo, int depth) {
 
 	tuple<float, Direction> transmittedDirection;
 	Ray transmittedRay;
@@ -314,18 +329,19 @@ Vector glass(Ray ray, vector<Sphere> scene, Vector x, Direction normal, tuple<fl
 	else {
 
 		random_device rd;
-		default_random_engine generator(rd());
+		minstd_rand generator(rd());
 		uniform_real_distribution<float> distribution(0, 1);
 		float r = distribution(generator);
 
 		if (r < coef) {
-			transmittedRay = Ray(Point((x + 0.03 * get<1>(transmittedDirection)).values), get<1>(transmittedDirection));
+			transmittedRay = Ray(x + 0.03 * get<1>(transmittedDirection), get<1>(transmittedDirection));
 			radianceTransmittedRayPixel = (Vector)radiance(transmittedRay, depth + 1, scene);
-			if (radianceTransmittedRayPixel.values[0] == -1) {
-				contribRefract = Vector({ 0,0,0 });
+			if (radianceTransmittedRayPixel.data[0] == -1) {
+				contribRefract = Vector(0,0,0);
 			}
 			else {
-				contribRefract = Vector({ radianceTransmittedRayPixel.values[0] * albedo.values[0], radianceTransmittedRayPixel.values[1] * albedo.values[1], radianceTransmittedRayPixel.values[2] * albedo.values[2] });
+				contribRefract = radianceTransmittedRayPixel * albedo;
+				//Vector({ radianceTransmittedRayPixel.values[0] * albedo.values[0], radianceTransmittedRayPixel.values[1] * albedo.values[1], radianceTransmittedRayPixel.values[2] * albedo.values[2] });
 			}
 			return (1 / coef) * contribRefract * coef;
 		}
@@ -344,22 +360,22 @@ tuple<Direction, float> sample_cosinus(float u, float v) {
 	float theta = acosf(sqrt_v);
 	float sqrt_1_v = sqrtf((1 - v));
 
-	return make_tuple(Direction({ cos(phi) * sqrt_1_v, sin(phi) * sqrt_1_v, sqrt_v }), cos(theta) / M_PI);
+	return make_tuple(Direction(cos(phi) * sqrt_1_v, sin(phi) * sqrt_1_v, sqrt_v ), cos(theta) / M_PI);
 }
 
 tuple<Direction, Direction> make_base(Direction normal) {
 
-	int sign = (normal.values[2] > 0) - (normal.values[2] < 0);
-	float a = -1 / (sign + normal.values[2]);
-	float b = normal.values[0] * normal.values[1] * a;
+	int sign = (normal.data[2] > 0) - (normal.data[2] < 0);
+	float a = -1 / (sign + normal.data[2]);
+	float b = normal.data[0] * normal.data[1] * a;
 
-	Direction baseX = Direction({ 1 + sign * normal.values[0] * normal.values[0] * a,
+	Direction baseX = Direction( 1 + sign * normal.data[0] * normal.data[0] * a,
 									sign * b,
-									-sign * normal.values[0] });
+									-sign * normal.data[0] );
 
-	Direction baseY = Direction({ b,
-									sign + normal.values[1] * normal.values[1] * a,
-									- normal.values[1] });
+	Direction baseY = Direction( b,
+									sign + normal.data[1] * normal.data[1] * a,
+									- normal.data[1] );
 
 	return make_tuple(baseX, baseY);
 
@@ -376,9 +392,9 @@ Direction rotate_vector(Direction normal, Direction indirectDirection) {
 	baseX = get<0>(baseXY);
 	baseY = get<1>(baseXY);
 
-	rotated_vector = Direction({ (indirectDirection.values[0] * baseX +
-						indirectDirection.values[1] * baseY +
-						indirectDirection.values[2] * normal).values });
+	rotated_vector = Direction({ (indirectDirection.data[0] * baseX +
+						indirectDirection.data[1] * baseY +
+						indirectDirection.data[2] * normal) });
 	
 	return rotated_vector;
 }
@@ -402,16 +418,20 @@ int main() {
 	};
 
 	random_device rd;
-	default_random_engine generator(rd());
+	minstd_rand generator(rd());
 	uniform_real_distribution<float> distribution(0, 1);
+	
 
+	Vector res;
+	std::srand(time(nullptr));
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {
 
 			float dx = distribution(generator);
 			float dy = distribution(generator);
 
-			vector<float> pixel = rayTrace(i + dx, j + dy, scene).values;
+			res = rayTrace(i + dx, j + dy, scene);
+			vector<float> pixel = { res.data[0], res.data[1], res.data[2] };
 
 			pixels[i][j].insert(pixels[i][j].end(), pixel.begin(), pixel.end());
 
