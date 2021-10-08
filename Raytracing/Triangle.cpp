@@ -23,6 +23,7 @@ Triangle::~Triangle()
 }
 
 float Triangle::rayIntersect(Ray ray) {
+	//cout << "Triangle ray intersect" << endl;
 	Vector edge1 = this->p2 - this->p1;
 	Vector edge2 = this->p3 - this->p1;
 	Direction h = ray.direction.cross(edge2);

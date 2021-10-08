@@ -43,7 +43,7 @@ vector<Triangle*> parseOffFile(const char* filename) {
         }
         //cout << triangle[1] << endl;
         //cout << vertices[triangle[1]].data << endl;
-        triangles.push_back(new Triangle(vertices[triangle[1]], vertices[triangle[2]], vertices[triangle[3]], Material(Vector({ 1,1,0 }), MaterialBehaviour::Diffuse)));
+        triangles.push_back(new Triangle(vertices[triangle[1]], vertices[triangle[2]], vertices[triangle[3]], Material(Vector({ 1,1,1 }), MaterialBehaviour::Diffuse)));
         triangle.clear();
     }
 

@@ -20,7 +20,7 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene) {
 		return Vector({ 0, 0, 0 });
 	}
 
-	tuple<float, Object> intersect = rayIntersectObjects(ray, scene);
+	tuple<float, Object*> intersect = rayIntersectObjects(ray, scene);
 	if (get<0>(intersect) == -1) {
 		return Vector({ -1,-1,-1 });
 	}
@@ -28,7 +28,7 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene) {
 
 		Point x;
 
-		int numberOfRayToLight = 2;
+		int numberOfRayToLight = 3;
 		Sphere light = Sphere(Point({ 125,10,125 }), 24);
 		Point lightPosition;
 		Vector lightEmission;
@@ -42,12 +42,12 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene) {
 
 		x = ray.origin + get<0>(intersect) * ray.direction; // Intersection Point
 
-		normal = Direction((get<1>(intersect).normal(x)).normalize());
+		normal = Direction(((*get<1>(intersect)).normal(x)).normalize());
 
 		//Sphere color
-		albedo = get<1>(intersect).material.material;
+		albedo = (*get<1>(intersect)).material.material;
 
-		switch (get<1>(intersect).material.materialBehaviour) { //TODO Make function for each case and call it
+		switch ((*get<1>(intersect)).material.materialBehaviour) { //TODO Make function for each case and call it
 		case MaterialBehaviour::Diffuse:
 
 			return (1 / coefRR) * diffuse(ray, numberOfRayToLight, scene, x, normal, intersect, albedo, light, lightEmission, depth);
@@ -72,29 +72,29 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene) {
 
 }
 
-tuple<float, Object> rayIntersectObjects(Ray ray, vector<Object*> scene) {
+tuple<float, Object*> rayIntersectObjects(Ray ray, vector<Object*> scene) {
 	int numberOfObject = scene.size();
-	vector<tuple<float, Object>> intersections(numberOfObject);
+	vector<tuple<float, Object*>> intersections(numberOfObject);
 	//for (Sphere sphere : scene) {
 	//	intersections.push_back(make_tuple(rayIntersectSphere(ray,sphere),sphere));
 	//}
 
 	for (int i = 0; i < numberOfObject; i++) {
-		intersections[i] = make_tuple(scene[i]->rayIntersect(ray), *scene[i]);
+		intersections[i] = make_tuple(scene[i]->rayIntersect(ray), scene[i]);
 	}
 
-	intersections.erase(remove_if(intersections.begin(), intersections.end(), [](const tuple<float, Object>& x) -> bool {return get<0>(x) == -1;}), intersections.end());
+	intersections.erase(remove_if(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x) -> bool {return get<0>(x) == -1;}), intersections.end());
 
-	if (intersections.empty()) return make_tuple(-1, Object());
+	if (intersections.empty()) return make_tuple(-1, new Object());
 
-	tuple<float, Object> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Object>& x, const tuple<float, Object>& y) { return get<0>(x) < get<0>(y);});
+	tuple<float, Object*> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x, const tuple<float, Object*>& y) { return get<0>(x) < get<0>(y);});
 
 	return intersection;
 
 }
 
 Point rayTrace(int x, int y, vector<Object*> scene) {
-	int numberOfRayPerPixel = 3;
+	int numberOfRayPerPixel = 5;
 
 	Vector pointNearPlane;
 	Vector pointNearPlaneMoved;
@@ -126,7 +126,7 @@ Point rayTrace(int x, int y, vector<Object*> scene) {
 	return toneMap(contrib);
 }
 
-Vector diffuse(Ray ray, int numberOfRayToLight, vector<Object*> scene, Point x, Direction normal, tuple<float, Object> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth) {
+Vector diffuse(Ray ray, int numberOfRayToLight, vector<Object*> scene, Point x, Direction normal, tuple<float, Object*> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth) {
 	float r;
 	float r2;
 	Ray randomRayOnLight;
@@ -141,9 +141,9 @@ Vector diffuse(Ray ray, int numberOfRayToLight, vector<Object*> scene, Point x, 
 	float lightDistance2;
 	float lightCoef = 0;
 
-	tuple<float, Object> tupleIntersectObject;
+	tuple<float, Object*> tupleIntersectObject;
 	float intersectLight;
-	Object objectIntersect;
+	Object* objectIntersect;
 	bool canSeeLightSource;
 	Vector visibility;
 
@@ -220,7 +220,7 @@ Vector diffuse(Ray ray, int numberOfRayToLight, vector<Object*> scene, Point x, 
 	return (contribDirect + (contribIndirect * coefIndirect)) / numberOfRayToLight;
 }
 
-Vector mirror(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth) {
+Vector mirror(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object*> intersect, Vector albedo, int depth) {
 	Direction reflectedDirection;
 	Ray reflectedRay;
 	Vector radianceReflectedRayPixel;
@@ -237,7 +237,7 @@ Vector mirror(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<f
 	}
 }
 
-Vector glass(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth) {
+Vector glass(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object*> intersect, Vector albedo, int depth) {
 	tuple<float, Direction> transmittedDirection;
 	Ray transmittedRay;
 	Vector radianceTransmittedRayPixel;
@@ -251,7 +251,7 @@ Vector glass(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<fl
 	Vector contribReflect;
 
 	outside = ray.direction.dot(normal) < 0;
-	transmittedDirection = refract(get<1>(intersect).material.indiceOfRefraction, normal, ray.direction, outside);
+	transmittedDirection = refract((*get<1>(intersect)).material.indiceOfRefraction, normal, ray.direction, outside);
 	coef = get<0>(transmittedDirection);
 	if (coef == -1) {
 		return mirror(ray, scene, x, normal, intersect, albedo, depth);
@@ -332,21 +332,41 @@ Direction rotate_vector(Direction normal, Direction indirectDirection) {
 int main() {
 
 	vector<Triangle*> triangles;
-	float triangleOffset = 100;
+	float triangleOffset = 50;
+	float triangleScale = 50;
 	triangles = parseOffFile("../cube.off");
 	cout << "Parse Done" << endl;
 
-	/*for (int i = 0; i < triangles.size(); i++) {
+	for (int i = 0; i < triangles.size(); i++) {
+
+		for (int j = 0; j < 3; j++) {
+			if (j != 2) {
+				triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+				triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+				triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
+			}
+			else {
+				triangles[i]->p1.data[j] = triangles[i]->p1.data[j]  + 150;
+				triangles[i]->p2.data[j] = triangles[i]->p2.data[j]  + 150;
+				triangles[i]->p3.data[j] = triangles[i]->p3.data[j]  + 150;
+			}
+		}
+
+	}
+
+	for (int i = 0; i < triangles.size(); i++) {
 		cout << "Triangle " << i << endl;
-		cout << "{ " << triangles[i].p1.data[0] << ", " << triangles[i].p1.data[1] << ", " << triangles[i].p1.data[2] << "}" << endl;
-		cout << "{ " << triangles[i].p2.data[0] << ", " << triangles[i].p2.data[1] << ", " << triangles[i].p2.data[2] << "}" << endl;
-		cout << "{ " << triangles[i].p3.data[0] << ", " << triangles[i].p3.data[1] << ", " << triangles[i].p3.data[2] << "}" << endl;
-	}*/
+		cout << "{ " << triangles[i]->p1.data[0] << ", " << triangles[i]->p1.data[1] << ", " << triangles[i]->p1.data[2] << "}" << endl;
+		cout << "{ " << triangles[i]->p2.data[0] << ", " << triangles[i]->p2.data[1] << ", " << triangles[i]->p2.data[2] << "}" << endl;
+		cout << "{ " << triangles[i]->p3.data[0] << ", " << triangles[i]->p3.data[1] << ", " << triangles[i]->p3.data[2] << "}" << endl;
+	}
 
 	vector<int> dimensions = { 250,250 };
 	vector<vector<vector<int>>> pixels(dimensions[0], vector<vector<int>>(dimensions[1]));
 
-	vector<Object*> scene = {																		// Need to be a parameter of radiance
+	vector<Object*> scene;
+
+	/*vector<Object*> scene = {																		// Need to be a parameter of radiance
 		new Sphere(Point({2000 + 250,50,0}),2000, Material(Vector({1,1,0}), MaterialBehaviour::Diffuse)), //Right
 		new Sphere(Point({-2000,125,0}),2000, Material(Vector({0,1,1}), MaterialBehaviour::Diffuse)), //Left
 		new Sphere(Point({125,-2000,0}),2000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), //Top
@@ -354,10 +374,10 @@ int main() {
 		new Sphere(Point({125,125 ,2000 + 250}),2000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Back
 		new Sphere(Point({125,125 ,-2000}),2000, Material(Vector({1,1,1}), MaterialBehaviour::Diffuse)), // Behind
 
-		//new Sphere(Point({80,136,136}),32, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
+		new Sphere(Point({80,136,136}),32, Material(Vector({1,1,1}), MaterialBehaviour::Mirror)),
 
-		//new Sphere(Point({156,136,136}),32, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 2.4))
-	};
+		new Sphere(Point({156,136,136}),32, Material(Vector({1,1,1}), MaterialBehaviour::Glass, 2.4))
+	};*/
 
 	for (int i = 0; i < triangles.size(); i++) {
 		scene.push_back(triangles[i]);

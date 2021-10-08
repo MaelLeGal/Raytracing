@@ -17,15 +17,15 @@
 
 Vector radiance(Ray ray, int depth, vector<Object> scene);
 
-tuple<float, Object> rayIntersectObjects(Ray ray, vector<Object*> scene);
+tuple<float, Object*> rayIntersectObjects(Ray ray, vector<Object*> scene);
 
 Point rayTrace(int x, int y, vector<Object*> scene);
 
-Vector diffuse(Ray ray, int numberOfRayToLight, vector<Object*> scene, Point x, Direction normal, tuple<float, Object> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth);
+Vector diffuse(Ray ray, int numberOfRayToLight, vector<Object*> scene, Point x, Direction normal, tuple<float, Object*> intersect, Vector albedo, Sphere light, Vector lightEmission, int depth);
 
-Vector mirror(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth);
+Vector mirror(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object*> intersect, Vector albedo, int depth);
 
-Vector glass(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object> intersect, Vector albedo, int depth);
+Vector glass(Ray ray, vector<Object*> scene, Point x, Direction normal, tuple<float, Object*> intersect, Vector albedo, int depth);
 
 Point toneMap(Vector v);
 
