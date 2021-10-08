@@ -6,9 +6,8 @@
 #pragma once
 
 #include "pch.h"
-#include "Point.h"
 #include "Triangle.h"
-#include "Material.h"
+
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -17,6 +16,6 @@
 
 using namespace std;
 
-vector<Triangle> parseOffFile(const char* filename);
+vector<Triangle*> parseOffFile(const char* filename);
 
 #endif // !MESHFILEPARSER_H

@@ -10,6 +10,7 @@
 #include "../Raytracing/Object.cpp"
 #include "../Raytracing/Sphere.h"
 #include "../Raytracing/Sphere.cpp"
+#include "../Raytracing/Triangle.h"
 #include "../Raytracing/Material.h"
 #include "../Raytracing/Material.cpp"
 #include "../Raytracing/CreationImagePPM.h"
@@ -547,8 +548,8 @@ namespace UnitTest
 		}
 		TEST_METHOD(Constructor_2)
 		{
-			Point origin = Point(0,0,0);
-			Direction direction = Direction(1,1,1);
+			Point origin = Point(0, 0, 0);
+			Direction direction = Direction(1, 1, 1);
 			Ray ray = Ray(origin, direction);
 			Assert::IsNotNull(&ray);
 			Assert::IsNotNull(&ray.origin);
@@ -560,8 +561,8 @@ namespace UnitTest
 			Assert::AreEqual((float)1, ray.direction.data[1]);
 			Assert::AreEqual((float)1, ray.direction.data[2]);
 		}
-
-		TEST_METHOD(rayIntersectSphere_1)
+	}; // <- A retirer
+		/*TEST_METHOD(rayIntersectSphere_1)
 		{
 			Point origin = Point(250,250,0);
 			Direction direction = Direction(0,0,1);
@@ -702,5 +703,5 @@ namespace UnitTest
 		TEST_METHOD(Reflect_1) {
 
 		}
-	};
+	};*/
 }

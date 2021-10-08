@@ -2,11 +2,8 @@
 #define TRIANGLE_H
 
 #pragma once
-#include "Direction.h"
-#include "Point.h"
-#include "Vector.h"
 #include "Object.h"
-#include "Material.h"
+
 class Triangle : public Object
 {
 public:
@@ -20,7 +17,8 @@ public:
 	Triangle(Point p1_, Point p2_, Point p3_, Material material);
 	~Triangle();
 
-	Direction normal();
+	float rayIntersect(Ray ray) override;
+	Direction normal(Point intersect) override;
 
 };
 #endif

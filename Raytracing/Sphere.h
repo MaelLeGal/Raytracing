@@ -2,11 +2,7 @@
 #define SPHERE_H
 
 #pragma once
-#include "Direction.h"
-#include "Point.h"
-#include "Vector.h"
 #include "Object.h"
-#include "Material.h"
 
 class Sphere : public Object
 {
@@ -19,5 +15,8 @@ public:
 	Sphere(Point center, float radius);
 	Sphere(Point center, float radius, Material material);
 	~Sphere();
+
+	float rayIntersect(Ray ray) override;
+	Direction normal(Point intersect) override;
 };
 #endif // !SPHERE_H
