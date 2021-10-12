@@ -127,6 +127,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Box.h" />
     <ClInclude Include="CreationImagePPM.h" />
     <ClInclude Include="Direction.h" />
     <ClInclude Include="Main.h" />
@@ -140,6 +141,7 @@
     <ClInclude Include="Vector.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Box.cpp" />
     <ClCompile Include="CreationImagePPM.cpp" />
     <ClCompile Include="Direction.cpp" />
     <ClCompile Include="Main.cpp" />

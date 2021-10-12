@@ -3,6 +3,8 @@
 
 #pragma once
 #include "Object.h"
+//Test
+#include "Sphere.h"
 
 class Triangle : public Object
 {
@@ -19,6 +21,7 @@ public:
 
 	float rayIntersect(Ray ray) override;
 	Direction normal(Point intersect) override;
+	tuple<Point, Point> getEnglobingCube() override;
 
 };
 #endif

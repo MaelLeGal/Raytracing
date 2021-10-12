@@ -18,5 +18,6 @@ public:
 
 	float rayIntersect(Ray ray) override;
 	Direction normal(Point intersect) override;
+	tuple<Point, Point> getEnglobingCube() override;
 };
 #endif // !SPHERE_H

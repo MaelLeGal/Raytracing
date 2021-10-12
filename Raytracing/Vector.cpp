@@ -96,9 +96,9 @@ Vector Vector::cross(Vector vec) {
 
 	float data_[3];
 
-	data_[0] = (this->data[1] * vec.data[3]) - (this->data[3] * vec.data[1]);
-	data_[1] = (this->data[3] * vec.data[1]) - (this->data[1] * vec.data[3]);
-	data_[2] = (this->data[1] * vec.data[2]) - (this->data[2] * vec.data[1]);
+	data_[0] = (this->data[1] * vec.data[2]) - (this->data[2] * vec.data[1]);
+	data_[1] = (this->data[2] * vec.data[0]) - (this->data[0] * vec.data[2]);
+	data_[2] = (this->data[0] * vec.data[1]) - (this->data[1] * vec.data[0]);
 
 	return Vector(data_);
 }

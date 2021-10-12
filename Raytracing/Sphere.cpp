@@ -47,3 +47,9 @@ float Sphere::rayIntersect(Ray ray) {
 Direction Sphere::normal(Point intersect) {
 	return Direction(intersect - this->center);
 }
+
+tuple<Point, Point> Sphere::getEnglobingCube() {
+	Point maxCoord = Point(this->center.data[1] + this->radius, this->center.data[2] + this->radius, this->center.data[2] + this->radius);
+	Point minCoord = Point(this->center.data[1] - this->radius, this->center.data[2] - this->radius, this->center.data[2] - this->radius);
+	return make_tuple(maxCoord, minCoord);
+};
