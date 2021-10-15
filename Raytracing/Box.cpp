@@ -29,7 +29,7 @@ float Box::rayIntersect(Ray ray) {
 
 	//cout << "Ray Intersect inside" << endl;
 
-	float minX = (this->coordMin.data[0] - ray.origin.data[0]) / ray.direction.data[0];
+	/*float minX = (this->coordMin.data[0] - ray.origin.data[0]) / ray.direction.data[0];
 	float maxX = (this->coordMax.data[0] - ray.origin.data[0]) / ray.direction.data[0];
 
 	if (minX > maxX) swap(minX, maxX);
@@ -56,9 +56,37 @@ float Box::rayIntersect(Ray ray) {
 
 	if (maxZ < maxX) maxX = maxZ;
 
-	return minX;
+	return minX;*/
 
 	//return true;
+
+	float rayX = 1 / ray.direction.normalize().data[0];
+	float rayY = 1 / ray.direction.normalize().data[1];
+	float rayZ = 1 / ray.direction.normalize().data[2];
+
+	float t1 = (this->coordMin.data[0] - ray.origin.data[0]) * rayX;
+	float t2 = (this->coordMax.data[0] - ray.origin.data[0]) * rayX;
+	float t3 = (this->coordMin.data[1] - ray.origin.data[1]) * rayY;
+	float t4 = (this->coordMax.data[1] - ray.origin.data[1]) * rayY;
+	float t5 = (this->coordMin.data[2] - ray.origin.data[2]) * rayZ;
+	float t6 = (this->coordMax.data[2] - ray.origin.data[2]) * rayZ;
+
+	float tmin = max(max(min(t1, t2), min(t3, t4)), min(t5, t6));
+	float tmax = min(min(max(t1, t2), max(t3, t4)), max(t5, t6));
+
+	float t;
+	if (tmax < 0) {
+		t = tmax;
+		return -1;
+	}
+
+	if (tmin > tmax) {
+		t = tmax;
+		return -1;
+	}
+
+	t = tmin;
+	return t;
 }
 
 

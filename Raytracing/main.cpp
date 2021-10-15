@@ -20,7 +20,9 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene, vector<Box> boxes) {
 		return Vector({ 0, 0, 0 });
 	}
 
+	//cout << "Call to rayIntersect Objects" << endl;
 	tuple<float, Object*> intersect = rayIntersectObjects(ray, scene, boxes);
+	//cout << "End of rayIntersect Objects call" << endl;
 	if (get<0>(intersect) == -1) {
 		return Vector({ 1,0,1 });
 	}
@@ -80,7 +82,9 @@ tuple<float, Object*> rayIntersectObjects(Ray ray, vector<Object*> scene, vector
 	//}
 
 	float testIntersectBox = boxes[0].rayIntersect(ray);
-	if (testIntersectBox != -1) cout << boxes[0].rayIntersect(ray) << endl;
+	if (testIntersectBox != -1) { cout << "Value intersection with box : " << boxes[0].rayIntersect(ray) << endl; }
+	//else { cout << " No intersection with biggest box ?" << endl; }
+
 
 	tuple<int,int> indexesTriangles = fall_into_boxes(ray, boxes[0], boxes);
 
@@ -88,16 +92,26 @@ tuple<float, Object*> rayIntersectObjects(Ray ray, vector<Object*> scene, vector
 	//cout << get<1>(indexesTriangles) << endl;
 	if (get<0>(indexesTriangles) != -1) {
 		cout << "Inside box" << endl;
+		cout << get<0>(indexesTriangles) << " " << get<1>(indexesTriangles) << endl;
 		for (int i = get<0>(indexesTriangles); i < get<1>(indexesTriangles); i++) {
 			intersections[i] = make_tuple(scene[i]->rayIntersect(ray), scene[i]);
 		}
 		cout << "All triangles intersections done" << endl;
+
+		for (int i = 0; i < intersections.size(); i++) {
+			cout << get<0>(intersections[i]) << endl;
+		}
+
 		intersections.erase(remove_if(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x) -> bool {return get<0>(x) == -1;}), intersections.end());
 
 		if (intersections.empty()) return make_tuple(-1, new Object());
+		cout << "After erase" << endl;
+		for (int i = 0; i < intersections.size(); i++) {
+			cout << get<0>(intersections[i]) << endl;
+		}
 
 		tuple<float, Object*> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x, const tuple<float, Object*>& y) { return get<0>(x) < get<0>(y);});
-		cout << get<1>(intersection) << endl;
+		cout << get<0>(intersection) << endl;
 		return intersection;
 	}
 	else {
@@ -350,7 +364,7 @@ tuple<int, int> fall_into_boxes(Ray ray, Box box, vector<Box> boxes) {
 
 	if (box.rayIntersect(ray) != -1) {
 		//cout << "Ray intersect" << endl;
-		if (!box.children.empty() && box.children[0] != -1 && box.children[1] != -1) {
+		if (box.children[0] != -1 && box.children[1] != -1) {
 			cout << "Children not empty" << endl;
 			if (box.children.size() == 1) {
 				cout << "1 children" << endl;
@@ -447,7 +461,7 @@ int main() {
 	vector<Triangle*> triangles;
 	float triangleOffset = 50;
 	float triangleScale = 1000;
-	triangles = parseOffFile("../bunny.off");
+	triangles = parseOffFile("../triceratops.off");
 	cout << "Parse Done" << endl;
 
 	for (int i = 0; i < triangles.size(); i++) {

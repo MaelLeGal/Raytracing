@@ -1,5 +1,7 @@
 #include "pch.h"
 #include "CppUnitTest.h"
+#include "../Raytracing/Main.h"
+#include "../Raytracing/Main.cpp"
 #include "../Raytracing/Vector.h"
 #include "../Raytracing/Vector.cpp"
 #include "../Raytracing/Point.h"
@@ -11,12 +13,17 @@
 #include "../Raytracing/Sphere.h"
 #include "../Raytracing/Sphere.cpp"
 #include "../Raytracing/Triangle.h"
+#include "../Raytracing/Triangle.cpp"
 #include "../Raytracing/Material.h"
 #include "../Raytracing/Material.cpp"
 #include "../Raytracing/CreationImagePPM.h"
 #include "../Raytracing/CreationImagePPM.cpp"
 #include "../Raytracing/Ray.h"
 #include "../Raytracing/Ray.cpp"
+#include "../Raytracing/MeshFileParser.h"
+#include "../Raytracing/MeshFileParser.cpp"
+#include "../Raytracing/Box.h"
+#include "../Raytracing/Box.cpp"
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 
@@ -704,4 +711,204 @@ namespace UnitTest
 
 		}
 	};*/
+
+	TEST_CLASS(BoxClass) {
+	public:
+		TEST_METHOD(EnglobingBox_1) {
+
+			vector<Triangle*> triangles;
+			float triangleOffset = 50;
+			float triangleScale = 1000;
+			triangles = parseOffFile("../cube.off");
+
+			for (int i = 0; i < triangles.size(); i++) {
+
+				for (int j = 0; j < 3; j++) {
+					if (j != 3) {
+						triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
+					}
+				}
+
+			}
+
+			vector<Object*> scene;
+			for (int i = 0; i < triangles.size(); i++) {
+				scene.push_back(triangles[i]);
+			}
+
+			Box sceneEnglobingBox = createEnglobingBox(scene);
+			Assert::AreEqual((float)50, sceneEnglobingBox.coordMin.data[0]);
+			Assert::AreEqual((float)50, sceneEnglobingBox.coordMin.data[1]);
+			Assert::AreEqual((float)50, sceneEnglobingBox.coordMin.data[2]);
+
+			Assert::AreEqual((float)1050, sceneEnglobingBox.coordMax.data[0]);
+			Assert::AreEqual((float)1050, sceneEnglobingBox.coordMax.data[1]);
+			Assert::AreEqual((float)1050, sceneEnglobingBox.coordMax.data[2]);
+		};
+
+		TEST_METHOD(BiggestAxis_1) {
+
+			vector<Triangle*> triangles;
+			float triangleOffset = 50;
+			float triangleScale = 1000;
+			triangles = parseOffFile("../cube.off");
+
+			for (int i = 0; i < triangles.size(); i++) {
+
+				for (int j = 0; j < 3; j++) {
+					if (j != 3) {
+						triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
+					}
+				}
+
+			}
+
+			vector<Object*> scene;
+			for (int i = 0; i < triangles.size(); i++) {
+				scene.push_back(triangles[i]);
+			}
+
+			Box sceneEnglobingBox = createEnglobingBox(scene);
+			int axis = sceneEnglobingBox.computeBiggestAxis();
+
+			Assert::AreEqual(0, axis);
+		};
+
+		TEST_METHOD(BiggestAxis_2) {
+
+			vector<Triangle*> triangles;
+			float triangleOffset = 50;
+			float triangleScale = 1000;
+			triangles = parseOffFile("../buddha.off");
+
+			for (int i = 0; i < triangles.size(); i++) {
+
+				for (int j = 0; j < 3; j++) {
+					if (j != 3) {
+						triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
+					}
+				}
+
+			}
+
+			vector<Object*> scene;
+			for (int i = 0; i < triangles.size(); i++) {
+				scene.push_back(triangles[i]);
+			}
+
+			Box sceneEnglobingBox = createEnglobingBox(scene);
+			int axis = sceneEnglobingBox.computeBiggestAxis();
+
+			Assert::AreEqual(1, axis);
+		};
+
+		TEST_METHOD(RayIntersectObject_1) {
+			Point origin = Point(250, 250, 0);
+			Direction direction = Direction(0, 0, 1);
+			Ray ray = Ray(origin, direction);
+
+			vector<Triangle*> triangles;
+			float triangleOffset = 50;
+			float triangleScale = 1000;
+			triangles = parseOffFile("../cube.off");
+
+			for (int i = 0; i < triangles.size(); i++) {
+
+				for (int j = 0; j < 3; j++) {
+					if (j != 3) {
+						triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
+					}
+				}
+
+			}
+
+			vector<Object*> scene;
+			for (int i = 0; i < triangles.size(); i++) {
+				scene.push_back(triangles[i]);
+			}
+
+			Box sceneEnglobingBox = createEnglobingBox(scene);
+
+			float dist = sceneEnglobingBox.rayIntersect(ray);
+			Assert::AreEqual((float)50, dist);
+		};
+
+		TEST_METHOD(Fall_into_boxes_1) {
+
+			Point origin = Point(250, 250, 0);
+			Direction direction = Direction(0, 0, 1);
+			Ray ray = Ray(origin, direction);
+			vector<Box> boxes;
+
+			vector<Triangle*> triangles;
+			float triangleOffset = 50;
+			float triangleScale = 1000;
+			triangles = parseOffFile("../triceratops.off");
+
+			for (int i = 0; i < triangles.size(); i++) {
+
+				for (int j = 0; j < 3; j++) {
+					if (j != 3) {
+						triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+						triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
+					}
+				}
+
+			}
+
+			vector<Object*> scene;
+			for (int i = 0; i < triangles.size(); i++) {
+				scene.push_back(triangles[i]);
+			}
+
+			Box sceneEnglobingBox = createEnglobingBox(scene);
+
+			int axis = sceneEnglobingBox.computeBiggestAxis();
+
+			sort(triangles.begin(), triangles.end(), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis);}); // Sort triangles
+
+			sceneEnglobingBox.setTrianglesIndex(0, triangles.size() - 1);
+
+			// Children Box
+			Box childBox1 = createEnglobingBox({ triangles.begin() + 0,triangles.begin() + triangles.size() / 2 });
+			Box childBox2 = createEnglobingBox({ triangles.begin() + triangles.size() / 2, triangles.end() });
+
+			// Setting Scene Box children
+			cout << "Before setting children" << endl;
+			sceneEnglobingBox.setChildren(1, 2);
+			boxes.push_back(sceneEnglobingBox);
+			cout << "After setting children" << endl;
+
+			cout << childBox1.coordMax.data[0] << " " << childBox1.coordMax.data[1] << " " << childBox1.coordMax.data[2] << endl;
+			cout << childBox1.coordMin.data[0] << " " << childBox1.coordMin.data[1] << " " << childBox1.coordMin.data[2] << endl;
+			cout << childBox1.computeBiggestAxis() << endl;
+
+			sort(triangles.begin(), triangles.begin() + triangles.size() / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis);});
+			childBox1.setTrianglesIndex(0, triangles.size() / 2 - 1);
+			cout << childBox1.trianglesIndexStart << " " << childBox1.trianglesIndexEnd << endl;
+
+			cout << childBox2.coordMax.data[0] << " " << childBox2.coordMax.data[1] << " " << childBox2.coordMax.data[2] << endl;
+			cout << childBox2.coordMin.data[0] << " " << childBox2.coordMin.data[1] << " " << childBox2.coordMin.data[2] << endl;
+			cout << childBox2.computeBiggestAxis() << endl;
+
+			sort(triangles.begin() + triangles.size() / 2, triangles.end(), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis);});
+			childBox2.setTrianglesIndex(triangles.size() / 2, triangles.size() - 1);
+			cout << childBox2.trianglesIndexStart << " " << childBox2.trianglesIndexEnd << endl;
+
+			boxes.push_back(childBox1); //index 1
+			boxes.push_back(childBox2); //index 2
+
+			Assert::AreEqual(0,get<0>(fall_into_boxes(ray, sceneEnglobingBox, boxes)));
+			Assert::AreEqual(997, get<1>(fall_into_boxes(ray, sceneEnglobingBox, boxes)));
+		};
+	};
 }
