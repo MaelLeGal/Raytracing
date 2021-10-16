@@ -568,8 +568,8 @@ namespace UnitTest
 			Assert::AreEqual((float)1, ray.direction.data[1]);
 			Assert::AreEqual((float)1, ray.direction.data[2]);
 		}
-	}; // <- A retirer
-		/*TEST_METHOD(rayIntersectSphere_1)
+
+		TEST_METHOD(rayIntersectSphere_1)
 		{
 			Point origin = Point(250,250,0);
 			Direction direction = Direction(0,0,1);
@@ -578,7 +578,7 @@ namespace UnitTest
 			Point center = Point(250,250,300);
 			float radius = 100;
 			Sphere sphere = Sphere(center, radius);
-			float t0 = rayIntersectSphere(ray, sphere);
+			float t0 = sphere.rayIntersect(ray);
 
 			Assert::AreEqual((float)200, t0);
 		}
@@ -592,7 +592,7 @@ namespace UnitTest
 			Point center = Point(500,500,300);
 			float radius = 100;
 			Sphere sphere = Sphere(center, radius);
-			float t0 = rayIntersectSphere(ray, sphere);
+			float t0 = sphere.rayIntersect(ray);
 
 			Assert::AreEqual((float)-1, t0);
 		}
@@ -603,25 +603,28 @@ namespace UnitTest
 			Direction direction = Direction(0,0,1);
 			Ray ray = Ray(origin, direction);
 
-			Point center1 = Point(250,250,300);
-			float radius1 = 100;
-			Sphere sphere1 = Sphere(center1, radius1);
+			Point center1 = Point(250,250,1000);
+			float radius1 = 150;
+			Sphere* sphere1 = new Sphere(center1, radius1);
 
-			Point center2 = Point(150,250,200);
-			float radius2 = 150;
-			Sphere sphere2 = Sphere(center2, radius2);
+			Point center2 = Point(250,250,500);
+			float radius2 = 100;
+			Sphere* sphere2 = new Sphere(center2, radius2);
 
-			vector<Sphere> spheres;
+			vector<Object*> spheres;
 			spheres.push_back(sphere1);
 			spheres.push_back(sphere2);
 
-			tuple<float, Sphere> intersect = rayIntersectSpheres(ray, spheres);
-			Sphere intersectSphere = get<1>(intersect);
-			Assert::AreEqual((float)88.1966, get<0>(intersect));
-			Assert::AreEqual((float)150, intersectSphere.radius);
-			Assert::AreEqual((float)150, intersectSphere.center.data[0]);
-			Assert::AreEqual((float)250, intersectSphere.center.data[1]);
-			Assert::AreEqual((float)200, intersectSphere.center.data[2]);
+			vector<Box> boxes;
+			boxes.push_back(Box(Point(1000, 0, 1000), Point(0, 1000, 0)));
+
+			tuple<float, Object*> intersect = rayIntersectObjects(ray, spheres, boxes);
+			Object* intersectSphere = get<1>(intersect);
+			Assert::AreEqual((float)400, get<0>(intersect));
+			Assert::AreEqual((float)100, ((Sphere*)intersectSphere)->radius);
+			Assert::AreEqual((float)250, ((Sphere*)intersectSphere)->center.data[0]);
+			Assert::AreEqual((float)250, ((Sphere*)intersectSphere)->center.data[1]);
+			Assert::AreEqual((float)300, ((Sphere*)intersectSphere)->center.data[2]);
 		}
 
 		TEST_METHOD(rayIntersectSpheres_2)
@@ -632,18 +635,21 @@ namespace UnitTest
 
 			Point center1 = Point(500,500,300);
 			float radius1 = 100;
-			Sphere sphere1 = Sphere(center1, radius1);
+			Sphere* sphere1 = new Sphere(center1, radius1);
 
 			Point center2 = Point(0,0,300);
 			float radius2 = 150;
-			Sphere sphere2 = Sphere(center2, radius2);
+			Sphere* sphere2 = new Sphere(center2, radius2);
 
-			vector<Sphere> spheres;
+			vector<Object*> spheres;
 			spheres.push_back(sphere1);
 			spheres.push_back(sphere2);
 
-			tuple<float, Sphere> intersect = rayIntersectSpheres(ray, spheres);
-			Sphere intersectSphere = get<1>(intersect);
+			vector<Box> boxes;
+			boxes.push_back(Box(Point(250, 0, 1000), Point(0, 250, 0)));
+
+			tuple<float, Object*> intersect = rayIntersectObjects(ray, spheres, boxes);
+			Object* intersectSphere = get<1>(intersect);
 			Assert::AreEqual((float)-1, get<0>(intersect));
 		}
 
@@ -658,7 +664,7 @@ namespace UnitTest
 
 		}
 
-		TEST_METHOD(Radiance_1)
+		/*TEST_METHOD(Radiance_1)
 		{
 			vector<Sphere> scene = {																		// Need to be a parameter of radiance
 				Sphere(Point(5000 + 500,250,0),5000, Material(Vector(1,1,0), MaterialBehaviour::Diffuse)), //Right
@@ -680,7 +686,7 @@ namespace UnitTest
 			Assert::AreEqual((float)0.8, pixel.data[0]);
 			Assert::AreEqual((float)0.8, pixel.data[1]);
 			Assert::AreEqual((float)0.8, pixel.data[2]);
-		}
+		}*/
 
 	};
 
@@ -710,7 +716,7 @@ namespace UnitTest
 		TEST_METHOD(Reflect_1) {
 
 		}
-	};*/
+	};
 
 	TEST_CLASS(BoxClass) {
 	public:

@@ -10,6 +10,11 @@ Box::Box() {
 Box::Box(Point coordMax_, Point coordMin_) {
 	this->coordMax = coordMax_;
 	this->coordMin = coordMin_;
+
+	/*cout << "Construct box" << endl;
+	cout << this->coordMax.data[0] << endl;
+	cout << this->coordMin.data[0] << endl;*/
+
 	this->children.push_back(-1);
 	this->children.push_back(-1);
 

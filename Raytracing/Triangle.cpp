@@ -31,16 +31,21 @@ float Triangle::rayIntersect(Ray ray) {
 	Direction q = s.cross(edge1);
 	double a, f, u, v;
 	a = edge1.dot(h);
+	//cout << "a : " << a << endl;
 	if (a > -0.01 && a < 0.01)
 		return -1; // Le rayon est parallèle au triangle.
 	f = 1.0 / a;
 	u = f * (s.dot(h));
+	//cout << "f : " << f << endl;
+	//cout << "u : " << u << endl;
 	if (u < 0.0 || u > 1.0) {
 		return -1;
 	}
 	v = f * ray.direction.dot(q);
+	//cout << "v : " << v << endl;
+	//cout << "u+v : " << u + v << endl;
 	if (v < 0.0 || u + v > 1.0) {
-		return -1;
+		return  -1;
 	}
 	// On calcule t pour savoir ou le point d'intersection se situe sur la ligne.
 	double t = f * edge2.dot(q);

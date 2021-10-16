@@ -21,13 +21,15 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene, vector<Box> boxes) {
 	}
 
 	//cout << "Call to rayIntersect Objects" << endl;
+	//cout << "Start ray Intersect Objects" << endl;
 	tuple<float, Object*> intersect = rayIntersectObjects(ray, scene, boxes);
 	//cout << "End of rayIntersect Objects call" << endl;
+	//cout << get<0>(intersect) << endl;
 	if (get<0>(intersect) == -1) {
+		//cout << "Je passe bien ici 2" << endl;
 		return Vector({ 1,0,1 });
-	}
-	else {
-
+	} else {
+		//cout << "intersection found" << endl;
 		Point x;
 
 		int numberOfRayToLight = 3;
@@ -49,75 +51,128 @@ Vector radiance(Ray ray, int depth, vector<Object*> scene, vector<Box> boxes) {
 		//Sphere color
 		albedo = (*get<1>(intersect)).material.material;
 
-		switch ((*get<1>(intersect)).material.materialBehaviour) { //TODO Make function for each case and call it
-		case MaterialBehaviour::Diffuse:
+		switch ((*get<1>(intersect)).material.materialBehaviour) {
+			case MaterialBehaviour::Diffuse:
 
-			return (1 / coefRR) * diffuse(ray, numberOfRayToLight, scene, boxes, x, normal, intersect, albedo, light, lightEmission, depth);
-			break;
+				return (1 / coefRR) * diffuse(ray, numberOfRayToLight, scene, boxes, x, normal, intersect, albedo, light, lightEmission, depth);
+				break;
 
-		case MaterialBehaviour::Mirror:
+			case MaterialBehaviour::Mirror:
 
-			return (1 / coefRR) * mirror(ray, scene, boxes, x, normal, intersect, albedo, depth);
-			break; //optional
+				return (1 / coefRR) * mirror(ray, scene, boxes, x, normal, intersect, albedo, depth);
+				break; //optional
 
-		case MaterialBehaviour::Glass:
+			case MaterialBehaviour::Glass:
 
-			return (1 / coefRR) * glass(ray, scene, boxes, x, normal, intersect, albedo, depth);
-			break; //optional
+				return (1 / coefRR) * glass(ray, scene, boxes, x, normal, intersect, albedo, depth);
+				break; //optional
 
-		 // you can have any number of case statements.
-		default: //Optional
-			cout << "Default for some reason" << endl;
-			return Vector({ -1,-1,-1 });
+			 // you can have any number of case statements.
+			default: //Optional
+				cout << "Default for some reason" << endl;
+				return Vector({ -1,-1,-1 });
 		}
 	}
-
+	//return Vector({ -1,-1,-1 });
 }
 
 tuple<float, Object*> rayIntersectObjects(Ray ray, vector<Object*> scene, vector<Box> boxes) {
-	int numberOfObject = scene.size();
-	vector<tuple<float, Object*>> intersections(numberOfObject);
+	//int numberOfObject = scene.size();
+	//vector<tuple<float, Object*>> intersections(numberOfObject);
 	//for (Sphere sphere : scene) {
 	//	intersections.push_back(make_tuple(rayIntersectSphere(ray,sphere),sphere));
 	//}
 
-	float testIntersectBox = boxes[0].rayIntersect(ray);
-	if (testIntersectBox != -1) { cout << "Value intersection with box : " << boxes[0].rayIntersect(ray) << endl; }
+	//cout << "Ray intersect boxes" << endl;
+	//float testIntersectBox = boxes[0].rayIntersect(ray);
+	//cout << "Ray intersect boxes end" << endl;
+	//if (testIntersectBox != -1) { cout << "Value intersection with box : " << boxes[0].rayIntersect(ray) << endl; }
 	//else { cout << " No intersection with biggest box ?" << endl; }
-
-
-	tuple<int,int> indexesTriangles = fall_into_boxes(ray, boxes[0], boxes);
-
-	//cout << get<0>(indexesTriangles) << endl;
-	//cout << get<1>(indexesTriangles) << endl;
+	tuple<int, int> indexesTriangles = fall_into_boxes(ray, boxes[0], boxes);
+	vector<tuple<float, Object*>> intersections; // ((get<1>(indexesTriangles) - get<0>(indexesTriangles)) + 1);
 	if (get<0>(indexesTriangles) != -1) {
-		cout << "Inside box" << endl;
-		cout << get<0>(indexesTriangles) << " " << get<1>(indexesTriangles) << endl;
+		//cout << get<0>(indexesTriangles) << " " << get<1>(indexesTriangles) << endl;
 		for (int i = get<0>(indexesTriangles); i < get<1>(indexesTriangles); i++) {
-			intersections[i] = make_tuple(scene[i]->rayIntersect(ray), scene[i]);
+			float dist = scene[i]->rayIntersect(ray);
+			if (dist != -1) {
+				intersections.push_back(make_tuple(dist, scene[i]));
+				//cout << get<0>(intersections[i]) << endl;
+				//cout << get<0>(intersections.at(intersections.size()-1)) << endl;
+			}
+		}
+	}
+
+	if (intersections.empty()) {
+		//cout << "Empty" << endl;
+		return make_tuple(-1, new Object());
+	}
+	//cout << "before min : " << get<0>(intersections.at(0)) << endl;
+	tuple<float, Object*> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x, const tuple<float, Object*>& y) { return get<0>(x) < get<0>(y); });
+	//cout << "Inside : " << get<0>(intersection) << endl;
+
+	return intersection;
+	/*if (get<0>(indexesTriangles) != -1) {
+		//cout << "Inside box" << endl;
+		cout << get<0>(indexesTriangles) << " " << get<1>(indexesTriangles) << endl;
+		//for (int i = get<0>(indexesTriangles); i < get<1>(indexesTriangles); i++) {
+		//	intersections[i] = make_tuple(scene[i]->rayIntersect(ray), scene[i]);
+		//}
+		//get<0>(indexesTriangles) = 0;
+		//get<1>(indexesTriangles) = 997;
+		vector<tuple<float, Object*>> intersections((get<1>(indexesTriangles) - get<0>(indexesTriangles))+1);
+
+		for (int i = get<0>(indexesTriangles); i < get<1>(indexesTriangles)+1; i++) {
+			// (get<1>(indexesTriangles) == 1995) {
+				float dist = scene[i]->rayIntersect(ray);
+				if (dist == -1) {
+					intersections[i] = make_tuple(-1, new Object());
+				}
+				else {
+					// << dist << endl;
+					tuple<float, Object*> tuple = make_tuple(dist, scene[i]);
+					//cout << get<0>(tuple) << endl;
+					intersections[i] = tuple;
+				}
+			//}
+			//else {
+			//	intersections[i] = make_tuple(-1, new Object());
+			//}
 		}
 		cout << "All triangles intersections done" << endl;
+		//if (get<1>(indexesTriangles) == 1995) {
+			for (int i = 0; i < intersections.size(); i++) {
+				//if (get<0>(intersections[i]) != -1) {
+				//	cout << get<0>(intersections[i]) << endl;
+				//}
+				if(get<0>(intersections[i]) == 0){
+					get<0>(intersections[i]) = -1;
+				}
 
-		for (int i = 0; i < intersections.size(); i++) {
-			cout << get<0>(intersections[i]) << endl;
-		}
+				//cout << get<0>(intersections[i]) << endl;
+			}
+		//}
+
+		//cout << intersections.size() << endl;
 
 		intersections.erase(remove_if(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x) -> bool {return get<0>(x) == -1;}), intersections.end());
+		
+		//cout << intersections.size() << endl;
 
-		if (intersections.empty()) return make_tuple(-1, new Object());
+		if (intersections.empty()) {
+			cout << "Empty !!" << endl;
+			return make_tuple(-1, new Object());
+		};
+		/*cout << intersections.size() << endl;
 		cout << "After erase" << endl;
-		for (int i = 0; i < intersections.size(); i++) {
-			cout << get<0>(intersections[i]) << endl;
-		}
-
+		
 		tuple<float, Object*> intersection = *min_element(intersections.begin(), intersections.end(), [](const tuple<float, Object*>& x, const tuple<float, Object*>& y) { return get<0>(x) < get<0>(y);});
-		cout << get<0>(intersection) << endl;
+		//cout << get<0>(intersection) << endl;
 		return intersection;
 	}
 	else {
-		return make_tuple(-1, new Object());
-	}
-
+		return make_tuple((float) - 1, new Object());
+	}*/
+	//return make_tuple((float)-1, new Object());
 }
 
 Point rayTrace(int x, int y, vector<Object*> scene, vector<Box> boxes) {
@@ -142,6 +197,7 @@ Point rayTrace(int x, int y, vector<Object*> scene, vector<Box> boxes) {
 	Vector contrib = Vector({ 0,0,0 });
 	Vector color;
 
+	//cout << "Number of ray per pixel loop start" << endl;
 	for (int i = 0; i < numberOfRayPerPixel; i++) {
 		color = radiance(ray, 0, scene, boxes);
 		if (contrib.data[0] != -1) {
@@ -311,7 +367,7 @@ Vector glass(Ray ray, vector<Object*> scene, vector<Box> boxes, Point x, Directi
 }
 
 Box createEnglobingBox(vector<Object*> objects) {
-
+	//cout << "At least called" << endl;
 	Point maxCoord = Point(numeric_limits<float>::min(), numeric_limits<float>::min(), numeric_limits<float>::min());
 	Point minCoord = Point(numeric_limits<float>::max(), numeric_limits<float>::max(), numeric_limits<float>::max());
 
@@ -320,9 +376,14 @@ Box createEnglobingBox(vector<Object*> objects) {
 
 	tuple<Point, Point> coordObject;
 	for (int i = 0; i < objects.size(); i++) {
+		//cout << "Before call to Englobing cube" << endl;
 		coordObject = objects[i]->getEnglobingCube();
+		//cout << "After call" << endl;
 		maxCoordObject = get<0>(coordObject);
 		minCoordObject = get<1>(coordObject);
+
+		//cout << "Max Coord Object : " << maxCoordObject.ToString() << endl;
+		//cout << "Min Coord Object : " << minCoordObject.ToString() << endl;
 
 		if (maxCoord.data[0] < maxCoordObject.data[0]) {
 			maxCoord.data[0] = maxCoordObject.data[0];
@@ -365,49 +426,49 @@ tuple<int, int> fall_into_boxes(Ray ray, Box box, vector<Box> boxes) {
 	if (box.rayIntersect(ray) != -1) {
 		//cout << "Ray intersect" << endl;
 		if (box.children[0] != -1 && box.children[1] != -1) {
-			cout << "Children not empty" << endl;
+			//cout << "Children not empty" << endl;
 			if (box.children.size() == 1) {
-				cout << "1 children" << endl;
+				//cout << "1 children" << endl;
 				childrenIndexesTriangles.push_back(fall_into_boxes(ray, boxes[box.children[0]], boxes));
 			}
 			else {
-				cout << "2 children" << endl;
-				cout << box.children[0] << endl;
-				childrenIndexesTriangles.push_back(fall_into_boxes(ray, boxes[box.children[0]], boxes));
-				cout << "first fall into boxes done" << endl;
-				childrenIndexesTriangles.push_back(fall_into_boxes(ray, boxes[box.children[1]], boxes));
-				cout << "second fall into boxes done" << endl;
+				//cout << "2 children" << endl;
+				//cout << box.children[0] << endl;
+				tuple<int, int> children1 = fall_into_boxes(ray, boxes[box.children[0]], boxes);
+				//cout << get<0>(children1) << endl;
+				//cout << get<1>(children1) << endl;
+				if (get<0>(children1) != -1) {
+					childrenIndexesTriangles.push_back(children1);
+				}
+				//cout << "first fall into boxes done" << endl;
+				tuple<int, int> children2 = fall_into_boxes(ray, boxes[box.children[1]], boxes);
+				//cout << get<0>(children2) << endl;
+				//cout << get<1>(children2) << endl;
+				if (get<0>(children2) != -1) {
+					childrenIndexesTriangles.push_back(children2);
+				}//cout << "second fall into boxes done" << endl;
 			}
 		}
 		else {
-			cout << "Return recurs" << endl;
-			cout << box.trianglesIndexStart << " " << box.trianglesIndexEnd << endl;
+			//cout << "Return recurs" << endl;
+			//cout << box.trianglesIndexStart << " " << box.trianglesIndexEnd << endl;
 			return make_tuple(box.trianglesIndexStart, box.trianglesIndexEnd);
 		}
-
-		/*if (box.children[0].empty()) {
-			childrenIndexesTriangles.push_back(fall_into_boxes(ray, boxes[box.children[0]], boxes));
-		}
-		else {
-			return make_tuple(box.trianglesIndexStart, box.trianglesIndexEnd);
-		}
-
-		if (box.children[1].empty()) {
-			childrenIndexesTriangles.push_back(fall_into_boxes(ray, boxes[box.children[1]], boxes));
-		}
-		else {
-			return make_tuple(box.trianglesIndexStart, box.trianglesIndexEnd);
-		}*/
 	}
 	else {
 		//cout << "No intersect" << endl;
 		return make_tuple(-1, -1);
 	}
 
-	tuple<int, int> indexesTriangles = childrenIndexesTriangles[0]; //TODO select the closest box/triangles
-	cout << get<0>(indexesTriangles) <<  " " << get<1>(indexesTriangles) <<endl;
-
-	return indexesTriangles;
+	if (!childrenIndexesTriangles.empty()) {
+		tuple<int, int> indexesTriangles = childrenIndexesTriangles[0]; //TODO select the closest box/triangles
+		//cout << get<0>(indexesTriangles) << " " << get<1>(indexesTriangles) << endl;
+	
+		return indexesTriangles;
+	}
+	else {
+		return make_tuple(-1, -1);
+	}
 }
 
 tuple<Direction, float> sample_cosinus(float u, float v) {
@@ -460,23 +521,16 @@ int main() {
 
 	vector<Triangle*> triangles;
 	float triangleOffset = 50;
-	float triangleScale = 1000;
+	float triangleScale = 10;
 	triangles = parseOffFile("../triceratops.off");
 	cout << "Parse Done" << endl;
 
 	for (int i = 0; i < triangles.size(); i++) {
 
 		for (int j = 0; j < 3; j++) {
-			if (j != 2) {
-				triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
-				triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
-				triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
-			}
-			else {
-				triangles[i]->p1.data[j] = triangles[i]->p1.data[j]  + 150;
-				triangles[i]->p2.data[j] = triangles[i]->p2.data[j]  + 150;
-				triangles[i]->p3.data[j] = triangles[i]->p3.data[j]  + 150;
-			}
+			triangles[i]->p1.data[j] = triangles[i]->p1.data[j] * triangleScale + triangleOffset;
+			triangles[i]->p2.data[j] = triangles[i]->p2.data[j] * triangleScale + triangleOffset;
+			triangles[i]->p3.data[j] = triangles[i]->p3.data[j] * triangleScale + triangleOffset;
 		}
 
 	}
@@ -511,7 +565,7 @@ int main() {
 	}
 
 	vector<Box> boxes;
-
+	// TODO faire une fonction de création des boites
 	cout << "Before Boxes" << endl;
 
 	// Scene Box
@@ -523,48 +577,104 @@ int main() {
 	cout << sceneEnglobingBox.computeBiggestAxis() << endl;
 	int axis = sceneEnglobingBox.computeBiggestAxis();
 
+	//cout << triangles[0]->p1.ToString() << endl;
 	sort(triangles.begin(), triangles.end(), [axis](Triangle* t1, Triangle* t2){return sort_triangles(t1, t2, axis);}); // Sort triangles
+	//cout << triangles[0]->p1.ToString() << endl;
+	//cout << ((Triangle*)scene[0])->p1.ToString() << endl;
+	sort(scene.begin(), scene.end(), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); }); // Sort triangles
+	//cout << ((Triangle*)scene[0])->p1.ToString() << endl;
+
 	/*for (int i = 0; i < triangles.size(); i++) {
 		cout << triangles[i]->p1.data[axis] << endl;
 	}*/
-	sceneEnglobingBox.setTrianglesIndex(0, triangles.size()-1);
 
+	sceneEnglobingBox.setTrianglesIndex(0, triangles.size()-1);
 	// Children Box
-	Box childBox1 = createEnglobingBox({ triangles.begin() + 0,triangles.begin() + triangles.size() / 2 });
+	Box childBox1 = createEnglobingBox({triangles.begin() + 0,triangles.begin() + triangles.size() / 2});
 	Box childBox2 = createEnglobingBox({ triangles.begin() + triangles.size() / 2, triangles.end()});
 	
 	// Setting Scene Box children
-	cout << "Before setting children" << endl;
+	//cout << "Before setting children" << endl;
 	sceneEnglobingBox.setChildren(1, 2);
 	boxes.push_back(sceneEnglobingBox);
-	cout << "After setting children" << endl;
+	//cout << "After setting children" << endl;
 
 	cout << childBox1.coordMax.data[0] << " " << childBox1.coordMax.data[1] << " " << childBox1.coordMax.data[2] << endl;
 	cout << childBox1.coordMin.data[0] << " " << childBox1.coordMin.data[1] << " " << childBox1.coordMin.data[2] << endl;
-	cout << childBox1.computeBiggestAxis() << endl;
+	axis = childBox1.computeBiggestAxis();
+	cout << axis << endl;
 
 	sort(triangles.begin(), triangles.begin() + triangles.size() / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis);});
-	childBox1.setTrianglesIndex(0, triangles.size() / 2 - 1);
+	sort(scene.begin(), scene.begin() + scene.size() / 2, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+	childBox1.setTrianglesIndex(sceneEnglobingBox.trianglesIndexStart, (sceneEnglobingBox.trianglesIndexEnd / 2));
 	cout << childBox1.trianglesIndexStart << " " << childBox1.trianglesIndexEnd << endl;
 
 	cout << childBox2.coordMax.data[0] << " " << childBox2.coordMax.data[1] << " " << childBox2.coordMax.data[2] << endl;
 	cout << childBox2.coordMin.data[0] << " " << childBox2.coordMin.data[1] << " " << childBox2.coordMin.data[2] << endl;
-	cout << childBox2.computeBiggestAxis() << endl;
+	axis = childBox2.computeBiggestAxis();
+	cout << axis << endl;
 
-	sort(triangles.begin() + triangles.size() / 2, triangles.end(), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis);});
-	childBox2.setTrianglesIndex(triangles.size() / 2, triangles.size()-1);
+	sort(triangles.begin() + (sceneEnglobingBox.trianglesIndexEnd/2) + 1, triangles.end(), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis);});
+	sort(scene.begin() + (sceneEnglobingBox.trianglesIndexEnd/2) + 1, scene.end(), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+	childBox2.setTrianglesIndex((sceneEnglobingBox.trianglesIndexEnd/2)+1, sceneEnglobingBox.trianglesIndexEnd);
 	cout << childBox2.trianglesIndexStart << " " << childBox2.trianglesIndexEnd << endl;
 
+	Box childBox3 = createEnglobingBox({triangles.begin(),triangles.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2 });
+	Box childBox4 = createEnglobingBox({triangles.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2 , triangles.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) });
+
+	childBox1.setChildren(3, 4);
 	boxes.push_back(childBox1); //index 1
+
+	axis = childBox3.computeBiggestAxis();
+	sort(triangles.begin() + childBox1.trianglesIndexStart, triangles.begin() + childBox1.trianglesIndexStart +(childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+	sort(scene.begin(), scene.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+	childBox3.setTrianglesIndex(childBox1.trianglesIndexStart, (childBox1.trianglesIndexEnd / 2));
+
+	cout << childBox3.trianglesIndexStart << " " << childBox3.trianglesIndexEnd << endl;
+
+	axis = childBox4.computeBiggestAxis();
+	sort(triangles.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2 + 1, triangles.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+	sort(scene.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2 + 1, scene.begin() + childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart),[axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+	childBox4.setTrianglesIndex(childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart) / 2 + 1, childBox1.trianglesIndexStart + (childBox1.trianglesIndexEnd - childBox1.trianglesIndexStart));
+
+	cout << childBox4.trianglesIndexStart << " " << childBox4.trianglesIndexEnd << endl;
+
+	cout << childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2 << endl;
+	Box childBox5 = createEnglobingBox({triangles.begin() + childBox2.trianglesIndexStart, triangles.begin() + childBox2.trianglesIndexStart +(childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2});
+	Box childBox6 = createEnglobingBox({triangles.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2 , triangles.begin() + childBox2.trianglesIndexEnd });
+
+	childBox2.setChildren(5, 6);
 	boxes.push_back(childBox2); //index 2
+
+	cout << "created" << endl;
+
+	axis = childBox5.computeBiggestAxis();
+	sort(triangles.begin() + childBox2.trianglesIndexStart, triangles.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+	sort(scene.begin() + childBox2.trianglesIndexStart, scene.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+	childBox5.setTrianglesIndex(childBox2.trianglesIndexStart, childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2);
+
+	cout << childBox5.trianglesIndexStart << " " << childBox5.trianglesIndexEnd << endl;
+
+	axis = childBox6.computeBiggestAxis();
+	sort(triangles.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2 + 1, triangles.begin() + childBox2.trianglesIndexEnd, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+	sort(scene.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2 + 1, scene.begin() + childBox2.trianglesIndexEnd, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+	childBox6.setTrianglesIndex((childBox2.trianglesIndexEnd / 2) + 1, childBox2.trianglesIndexEnd);
+
+	cout << childBox6.trianglesIndexStart << " " << childBox6.trianglesIndexEnd << endl;
+
+	boxes.push_back(childBox3); //index 3
+	boxes.push_back(childBox4); //index 4
+
+	boxes.push_back(childBox5); //index 5
+	boxes.push_back(childBox6); //index 6
 
 	random_device rd;
 	minstd_rand generator(rd());
 	uniform_real_distribution<float> distribution(0, 1);
 
-
 	Vector res;
-	//std::srand(time(nullptr));
+	std::srand(time(nullptr));
+	cout << "Start loop" << endl;
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {
 
@@ -584,5 +694,4 @@ int main() {
 	const char* filename = "first_image.ppm";
 
 	createPPMImage(dimensions, pixels, filename);
-
 };
