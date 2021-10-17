@@ -413,6 +413,118 @@ Box createEnglobingBox(vector<Object*> objects) {
 	return Box(maxCoord, minCoord);
 }
 
+tuple<vector<Box>, vector<Triangle*>, vector<Object*>> createBoxTree(vector<Box> boxes, Box parentBox, vector<Triangle*> triangles, vector<Object*> scene, int maxDepth, int depth) {
+
+	if (maxDepth == 1) {
+		int axis = parentBox.computeBiggestAxis();
+		sort(triangles.begin(), triangles.end(), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+		sort(scene.begin(), scene.end(), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+		parentBox.setTrianglesIndex(0, triangles.size() - 1);
+		// Children Box
+
+		// Setting Scene Box children
+		parentBox.setChildren(-1, -1);
+		boxes[0] = parentBox;
+		return make_tuple(boxes, triangles, scene);
+	}
+
+	if (depth == maxDepth || (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) == 1) {
+		
+		Box childBox1 = createEnglobingBox({ triangles.begin() + parentBox.trianglesIndexStart, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 });
+		Box childBox2 = createEnglobingBox({ triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) });
+
+		int axis = childBox1.computeBiggestAxis();
+
+		sort(triangles.begin() + parentBox.trianglesIndexStart, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+		sort(scene.begin() + parentBox.trianglesIndexStart, scene.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+		childBox1.setTrianglesIndex(parentBox.trianglesIndexStart, parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2);
+
+		axis = childBox2.computeBiggestAxis();
+
+		sort(triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+		sort(scene.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, scene.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+		childBox2.setTrianglesIndex(parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart));
+
+		childBox1.setChildren(-1,-1);
+		childBox2.setChildren(-1,-1);
+
+		boxes[parentBox.children[0]] = childBox1;
+		boxes[parentBox.children[1]] = childBox2;
+
+		cout << "Child 1 return" << endl;
+		cout << childBox1.coordMax.data[0] << " " << childBox1.coordMax.data[1] << " " << childBox1.coordMax.data[2] << endl;
+		cout << childBox1.coordMin.data[0] << " " << childBox1.coordMin.data[1] << " " << childBox1.coordMin.data[2] << endl;
+		cout << childBox1.trianglesIndexStart << " " << childBox1.trianglesIndexEnd << endl;
+
+		cout << "Child 2 return" << endl;
+		cout << childBox2.coordMax.data[0] << " " << childBox2.coordMax.data[1] << " " << childBox2.coordMax.data[2] << endl;
+		cout << childBox2.coordMin.data[0] << " " << childBox2.coordMin.data[1] << " " << childBox2.coordMin.data[2] << endl;
+		cout << childBox2.trianglesIndexStart << " " << childBox2.trianglesIndexEnd << endl;
+
+		return make_tuple(boxes, triangles, scene);
+	}
+
+	if (depth == 1) {
+		//Box sceneEnglobingBox = createEnglobingBox(scene);
+		int axis = parentBox.computeBiggestAxis();
+		sort(triangles.begin(), triangles.end(), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+		sort(scene.begin(), scene.end(), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+		parentBox.setTrianglesIndex(0, triangles.size() - 1);
+		// Children Box
+
+		// Setting Scene Box children
+		parentBox.setChildren(1, 2);
+		boxes[0] = parentBox;
+
+		return createBoxTree(boxes, parentBox, triangles, scene, maxDepth, depth + 1);
+	}
+	else {
+
+		Box childBox1 = createEnglobingBox({ triangles.begin() + parentBox.trianglesIndexStart, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 });
+		Box childBox2 = createEnglobingBox({ triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) });
+
+		int axis = childBox1.computeBiggestAxis();
+
+		sort(triangles.begin() + parentBox.trianglesIndexStart, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+		sort(scene.begin() + parentBox.trianglesIndexStart, scene.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+		childBox1.setTrianglesIndex(parentBox.trianglesIndexStart, parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2);
+
+		axis = childBox2.computeBiggestAxis();
+
+		sort(triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, triangles.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart), [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
+		sort(scene.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, scene.begin() + parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
+		childBox2.setTrianglesIndex(parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart) / 2 + 1, parentBox.trianglesIndexStart + (parentBox.trianglesIndexEnd - parentBox.trianglesIndexStart));
+
+		//childBox1.setChildren(parentBox.children[1]+1, parentBox.children[1] + 2);
+		//childBox2.setChildren(childBox1.children[1] + 1, childBox1.children[1] + 2);
+		/*if (depth + 1 == maxDepth) {
+			childBox1.setChildren(-1,-1);
+			childBox2.setChildren(-1,-1);
+		}
+		else {*/
+			childBox1.setChildren(parentBox.children[0] + parentBox.children[1], parentBox.children[0] + parentBox.children[1] + 1);
+			childBox2.setChildren(parentBox.children[0] + parentBox.children[1] + 2, parentBox.children[0] + parentBox.children[1] + 3);
+		//}
+		boxes[parentBox.children[0]] = childBox1;
+		boxes[parentBox.children[1]] = childBox2;
+
+		cout << "Child 1" << endl;
+		cout << childBox1.coordMax.data[0] << " " << childBox1.coordMax.data[1] << " " << childBox1.coordMax.data[2] << endl;
+		cout << childBox1.coordMin.data[0] << " " << childBox1.coordMin.data[1] << " " << childBox1.coordMin.data[2] << endl;
+		cout << childBox1.trianglesIndexStart << " " << childBox1.trianglesIndexEnd << endl;
+
+		cout << "Child 2" << endl;
+		cout << childBox2.coordMax.data[0] << " " << childBox2.coordMax.data[1] << " " << childBox2.coordMax.data[2] << endl;
+		cout << childBox2.coordMin.data[0] << " " << childBox2.coordMin.data[1] << " " << childBox2.coordMin.data[2] << endl;
+		cout << childBox2.trianglesIndexStart << " " << childBox2.trianglesIndexEnd << endl;
+
+		tuple<vector<Box>, vector<Triangle*>, vector<Object*>> boxTreeFirstChilds = createBoxTree(boxes, childBox1, triangles, scene, maxDepth, depth + 1);
+		return createBoxTree(get<0>(boxTreeFirstChilds), childBox2, get<1>(boxTreeFirstChilds), get<2>(boxTreeFirstChilds), maxDepth, depth + 1);
+	}
+
+
+}
+
 bool sort_triangles(Triangle* t1, Triangle* t2, int axis) {
 	return t1->p1.data[axis] < t2->p1.data[axis];
 }
@@ -425,6 +537,8 @@ tuple<int, int> fall_into_boxes(Ray ray, Box box, vector<Box> boxes) {
 
 	if (box.rayIntersect(ray) != -1) {
 		//cout << "Ray intersect" << endl;
+		//cout << "Children 1 ray intersect : " << boxes[box.children[0]].rayIntersect(ray) << endl;
+		//cout << "Children 2 ray intersect : " << boxes[box.children[1]].rayIntersect(ray) << endl;
 		if (box.children[0] != -1 && box.children[1] != -1) {
 			//cout << "Children not empty" << endl;
 			if (box.children.size() == 1) {
@@ -467,6 +581,7 @@ tuple<int, int> fall_into_boxes(Ray ray, Box box, vector<Box> boxes) {
 		return indexesTriangles;
 	}
 	else {
+		//cout << "Empty ?!" << endl;
 		return make_tuple(-1, -1);
 	}
 }
@@ -564,12 +679,29 @@ int main() {
 		scene.push_back(triangles[i]);
 	}
 
-	vector<Box> boxes;
+	int maxDepth = 3;
+	int size = (int)pow(2, maxDepth) - 1;
+	vector<Box> boxes(size);
 	// TODO faire une fonction de création des boites
 	cout << "Before Boxes" << endl;
 
 	// Scene Box
 	Box sceneEnglobingBox = createEnglobingBox(scene);
+	tuple<vector<Box>, vector<Triangle*>, vector<Object*>> boxTree = createBoxTree(boxes, sceneEnglobingBox, triangles, scene, maxDepth, 1);
+
+	boxes = get<0>(boxTree);
+	scene = get<2>(boxTree);
+
+	/*for (int i = 0; i < scene.size(); i++) {
+		cout << ((Triangle*)scene[i])->p1.ToString() << endl;
+	}*/
+	cout << "Scene size : " << scene.size() << endl;
+
+	cout << "boxes size : " << boxes.size() << endl;
+
+	
+
+	/*
 
 	cout << "After englobing box" << endl;
 	cout << sceneEnglobingBox.coordMax.data[0] << " " << sceneEnglobingBox.coordMax.data[1] << " " << sceneEnglobingBox.coordMax.data[2] << endl;
@@ -584,9 +716,9 @@ int main() {
 	sort(scene.begin(), scene.end(), [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); }); // Sort triangles
 	//cout << ((Triangle*)scene[0])->p1.ToString() << endl;
 
-	/*for (int i = 0; i < triangles.size(); i++) {
+	for (int i = 0; i < triangles.size(); i++) {
 		cout << triangles[i]->p1.data[axis] << endl;
-	}*/
+	}
 
 	sceneEnglobingBox.setTrianglesIndex(0, triangles.size()-1);
 	// Children Box
@@ -646,8 +778,6 @@ int main() {
 	childBox2.setChildren(5, 6);
 	boxes.push_back(childBox2); //index 2
 
-	cout << "created" << endl;
-
 	axis = childBox5.computeBiggestAxis();
 	sort(triangles.begin() + childBox2.trianglesIndexStart, triangles.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2, [axis](Triangle* t1, Triangle* t2) {return sort_triangles(t1, t2, axis); });
 	sort(scene.begin() + childBox2.trianglesIndexStart, scene.begin() + childBox2.trianglesIndexStart + (childBox2.trianglesIndexEnd - childBox2.trianglesIndexStart) / 2, [axis](Object* t1, Object* t2) {return sort_triangles((Triangle*)t1, (Triangle*)t2, axis); });
@@ -667,13 +797,13 @@ int main() {
 
 	boxes.push_back(childBox5); //index 5
 	boxes.push_back(childBox6); //index 6
-
+	*/
 	random_device rd;
 	minstd_rand generator(rd());
 	uniform_real_distribution<float> distribution(0, 1);
 
 	Vector res;
-	std::srand(time(nullptr));
+
 	cout << "Start loop" << endl;
 	for (int i = 0; i < dimensions[0]; i++) {
 		for (int j = 0; j < dimensions[1]; j++) {

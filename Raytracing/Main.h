@@ -39,6 +39,8 @@ Direction rotate_vector(Direction normal, Direction indirectDirection);
 
 Box createEnglobingBox(vector<Object*> objects);
 
+tuple<vector<Box>, vector<Triangle*>, vector<Object*>> createBoxTree(vector<Box> boxes, Box parentBox, vector<Triangle*> triangles, vector<Object*> scene, int maxDepth, int depth);
+
 bool sort_triangles(Triangle* t1, Triangle* t2, int axis);
 
 tuple<int, int> fall_into_boxes(Ray ray, Box box, vector<Box> boxes);

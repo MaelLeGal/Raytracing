@@ -3,8 +3,10 @@
 Box::Box() {
 	this->coordMax = Point(-1,-1,-1);
 	this->coordMin = Point(-1, -1, -1);
-	this->children[0] = -1;
-	this->children[1] = -1;
+	this->children.push_back(-1);
+	this->children.push_back(-1);
+	this->trianglesIndexStart = -1;
+	this->trianglesIndexEnd = -1;
 };
 
 Box::Box(Point coordMax_, Point coordMin_) {
@@ -18,6 +20,8 @@ Box::Box(Point coordMax_, Point coordMin_) {
 	this->children.push_back(-1);
 	this->children.push_back(-1);
 
+	this->trianglesIndexStart = -1;
+	this->trianglesIndexEnd = -1;
 	//this->children[0] = -1;
 	//this->children[1] = -1;
 }
@@ -27,6 +31,9 @@ Box::Box(Point coordMax_, Point coordMin_, int children_[2]) {
 	this->coordMin = coordMin_;
 	this->children.push_back(children_[0]);
 	this->children.push_back(children_[1]);
+
+	this->trianglesIndexStart = -1;
+	this->trianglesIndexEnd = -1;
 	//this->children[0] = children_[0];
 	//this->children[1] = children_[1];
 }
